@@ -1,6 +1,7 @@
 package com.virtualsecretary.virtual_secretary.dto.request;
 
 import com.virtualsecretary.virtual_secretary.enums.Degree;
+import com.virtualsecretary.virtual_secretary.enums.Role;
 import jakarta.validation.constraints.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserCreationRequest {
+public class UserUpdateRequest {
     @NotBlank(message = "Tên không được để trống")
     @Size(min = 4, max = 40, message = "Độ dài tên không phù hợp")
     String name;
@@ -41,6 +42,8 @@ public class UserCreationRequest {
     String bankNumber;
     @Size(min = 5, max = 15, message = "Số điện thoại không hợp lệ")
     String phoneNumber;
+
+    Role role;
 
 }
 

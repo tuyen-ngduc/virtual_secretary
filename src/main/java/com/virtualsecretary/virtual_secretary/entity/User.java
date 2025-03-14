@@ -28,7 +28,6 @@ public class User {
     String employeeCode;
     @Column(nullable = false)
     String name;
-
     String password;
     @Column(nullable = false)
     LocalDate dob;

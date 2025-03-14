@@ -1,7 +1,8 @@
 package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.UserCreationRequest;
-import com.virtualsecretary.virtual_secretary.dto.response.UserCreationResponse;
+import com.virtualsecretary.virtual_secretary.dto.request.UserUpdateRequest;
+import com.virtualsecretary.virtual_secretary.dto.response.UserResponse;
 import com.virtualsecretary.virtual_secretary.entity.Department;
 import com.virtualsecretary.virtual_secretary.entity.User;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
@@ -13,43 +14,68 @@ import com.virtualsecretary.virtual_secretary.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Service
+@Slf4j
 public class UserService {
     UserRepository userRepository;
     DepartmentRepository departmentRepository;
     PasswordEncoder passwordEncoder;
     UserMapper userMapper;
 
-    public UserCreationResponse createUser(UserCreationRequest request) {
+    public UserResponse createUser(UserCreationRequest request) {
         Department department = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() -> new IndicateException(ErrorCode.DEPARTMENT_NOT_EXISTED));
 
-        if(userRepository.existsByEmail(request.getEmail())){
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new IndicateException(ErrorCode.EMAIL_EXISTED);
         }
-        if(userRepository.existsByEmployeeCode(request.getEmployeeCode())){
+        if (userRepository.existsByEmployeeCode(request.getEmployeeCode())) {
             throw new IndicateException(ErrorCode.USER_EXISTED);
         }
         String formattedDob = request.getDob().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         String password = passwordEncoder.encode(formattedDob);
-        User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(password)
-                .role(Role.USER)
-                .department(department)
-                .employeeCode(request.getEmployeeCode())
-                .dob(request.getDob())
-                .degree(request.getDegree())
-                .build();
+        User user = userMapper.toUser(request);
+        user.setDepartment(department);
+        user.setPassword(password);
+        user.setRole(Role.USER);
         userRepository.save(user);
-        return userMapper.toUserCreationResponse(user);
+        return userMapper.toUserResponse(user);
+    }
+
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
+    }
+
+    public UserResponse updateUser(long userId, UserUpdateRequest request) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.DEPARTMENT_NOT_EXISTED));
+
+        if (userRepository.existsByEmailAndIdNot(request.getEmail(), userId)) {
+            throw new IndicateException(ErrorCode.EMAIL_EXISTED);
+        }
+        if (userRepository.existsByEmployeeCodeAndIdNot(request.getEmployeeCode(), userId)) {
+            throw new IndicateException(ErrorCode.USER_EXISTED);
+        }
+
+        String formattedDob = request.getDob().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String password = passwordEncoder.encode(formattedDob);
+        userMapper.updateUser(user, request);
+        user.setDepartment(department);
+        user.setPassword(password);
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
+    }
+    public void deleteUser(long userId) {
+        userRepository.deleteById(userId);
     }
 }

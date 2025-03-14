@@ -1,11 +1,10 @@
 package com.virtualsecretary.virtual_secretary.dto.response;
 
+import com.virtualsecretary.virtual_secretary.entity.Department;
 import com.virtualsecretary.virtual_secretary.enums.Degree;
 import com.virtualsecretary.virtual_secretary.enums.Role;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Column;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
@@ -13,10 +12,12 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserCreationResponse {
+public class UserResponse {
     long id;
     String employeeCode;
+    Department department;
     String name;
     LocalDate dob;
     String phoneNumber;
@@ -26,7 +27,5 @@ public class UserCreationResponse {
     String bankName;
     String bankNumber;
     String email;
-    String img;
     Role role;
-    String departmentName;
 }
