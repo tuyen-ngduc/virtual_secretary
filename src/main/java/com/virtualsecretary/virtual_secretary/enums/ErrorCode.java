@@ -17,6 +17,8 @@ public enum ErrorCode {
     DEPARTMENT_NOT_EXISTED(1009, "Department not existed", HttpStatus.BAD_REQUEST),
     EMAIL_EXISTED(1010, "Email existed", HttpStatus.BAD_REQUEST),
     VALIDATION_ERROR(400, "Invalid input", HttpStatus.BAD_REQUEST),
+    INVALID_CREDENTIALS(1011, "Incorrect password", HttpStatus.BAD_REQUEST),
+    JWT_SIGNING_ERROR(1012, "JWT Signing error", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
