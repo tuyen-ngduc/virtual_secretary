@@ -15,6 +15,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +32,7 @@ public class UserService {
     DepartmentRepository departmentRepository;
     PasswordEncoder passwordEncoder;
     UserMapper userMapper;
-
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request) {
         Department department = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() -> new IndicateException(ErrorCode.DEPARTMENT_NOT_EXISTED));
@@ -50,11 +52,11 @@ public class UserService {
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
-
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
     }
-
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(long userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
         Department department = departmentRepository.findById(request.getDepartmentId())
@@ -75,7 +77,20 @@ public class UserService {
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(long userId) {
         userRepository.deleteById(userId);
+    }
+
+    public UserResponse getUser(long userId) {
+        return userMapper.toUserResponse(
+                userRepository.findById(userId).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED)));
+    }
+
+    public UserResponse getMyInfo() {
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+        User user = userRepository.findByEmployeeCode(name).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
+        return userMapper.toUserResponse(user);
     }
 }

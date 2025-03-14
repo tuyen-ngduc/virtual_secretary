@@ -24,7 +24,6 @@ public class UserCreationRequest {
     @NotNull(message = "Ngày sinh không được để trống")
     @Past(message = "Ngày sinh không hợp lệ")
     LocalDate dob;
-    @NotNull(message = "Phòng ban không được để trống")
     long departmentId;
     @NotNull(message = "Bằng cấp không được để trống")
     Degree degree;

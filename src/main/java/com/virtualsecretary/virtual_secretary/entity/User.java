@@ -22,12 +22,13 @@ public class User {
     long id;
 
     @ManyToOne
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     Department department;
     @Column(nullable = false, unique = true)
     String employeeCode;
     @Column(nullable = false)
     String name;
+    @Column(nullable = false)
     String password;
     @Column(nullable = false)
     LocalDate dob;

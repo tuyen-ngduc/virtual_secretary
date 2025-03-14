@@ -9,10 +9,12 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@Slf4j
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -30,6 +32,9 @@ public class UserController {
     }
     @GetMapping
     ApiResponse<List<UserResponse>> getAllUsers() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("Username: {}", authentication.getName());
+        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
         return ApiResponse.<List<UserResponse>>builder()
                 .code(200)
                 .result(userService.getAllUsers())
@@ -53,6 +58,25 @@ public class UserController {
                 .message("User has been deleted")
                 .build();
     }
+
+    @GetMapping("/{userId}")
+    ApiResponse<UserResponse> getUser(@PathVariable long userId) {
+        return ApiResponse.<UserResponse>builder()
+                .code(200)
+                .message("Employee account retrieved successfully")
+                .result(userService.getUser(userId))
+                .build();
+    }
+
+    @GetMapping("/my-info")
+    ApiResponse<UserResponse> getMyInfo() {
+        return ApiResponse.<UserResponse>builder()
+                .code(200)
+                .message("Employee account retrieved successfully")
+                .result(userService.getMyInfo())
+                .build();
+    }
+
 
 
 
