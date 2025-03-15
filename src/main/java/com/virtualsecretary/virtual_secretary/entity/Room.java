@@ -15,8 +15,10 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
 
+    @Column(nullable = false, unique = true)
+    String roomCode;
     @Column(nullable = false)
-    String name;
+    String roomName;
 
 }
 

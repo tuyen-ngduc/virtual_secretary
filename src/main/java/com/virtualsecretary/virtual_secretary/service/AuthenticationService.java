@@ -6,6 +6,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.virtualsecretary.virtual_secretary.dto.request.AuthenticationRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.ChangePasswordRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.IntrospectRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.LogoutRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.AuthenticationResponse;
@@ -21,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -83,6 +86,23 @@ public class AuthenticationService {
                 .build();
 
         invalidatedTokenRepository.save(invalidatedToken);
+    }
+    @PreAuthorize("isAuthenticated()")
+    public void changePassword(ChangePasswordRequest request) {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmployeeCode(currentUsername)
+                .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new IndicateException(ErrorCode.OLD_PASSWORD_INCORRECT);
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new IndicateException(ErrorCode.NEW_PASSWORD_MUST_BE_DIFFERENT);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     private String generateToken(User user) {
