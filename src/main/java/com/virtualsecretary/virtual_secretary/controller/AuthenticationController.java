@@ -1,8 +1,12 @@
 package com.virtualsecretary.virtual_secretary.controller;
 
+import com.nimbusds.jose.JOSEException;
 import com.virtualsecretary.virtual_secretary.dto.request.AuthenticationRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.IntrospectRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.LogoutRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
 import com.virtualsecretary.virtual_secretary.dto.response.AuthenticationResponse;
+import com.virtualsecretary.virtual_secretary.dto.response.IntrospectResponse;
 import com.virtualsecretary.virtual_secretary.service.AuthenticationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +15,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.text.ParseException;
 
 @RestController
 @RequestMapping("/auth")
@@ -25,6 +31,23 @@ public class AuthenticationController {
                 .code(200)
                 .message("Authentication Successful")
                 .result(authenticationService.authenticate(request))
+                .build();
+    }
+    @PostMapping("/introspect")
+    ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request)
+            throws ParseException, JOSEException {
+        var result = authenticationService.introspect(request);
+        return ApiResponse.<IntrospectResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request)
+            throws ParseException, JOSEException {
+        authenticationService.logout(request);
+        return ApiResponse.<Void>builder()
+                .code(200)
                 .build();
     }
 }

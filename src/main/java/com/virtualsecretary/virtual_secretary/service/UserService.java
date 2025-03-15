@@ -48,7 +48,7 @@ public class UserService {
         User user = userMapper.toUser(request);
         user.setDepartment(department);
         user.setPassword(password);
-        user.setRole(Role.USER);
+        user.setRole(Role.ROLE_USER);
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
@@ -82,6 +82,7 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse getUser(long userId) {
         return userMapper.toUserResponse(
                 userRepository.findById(userId).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED)));

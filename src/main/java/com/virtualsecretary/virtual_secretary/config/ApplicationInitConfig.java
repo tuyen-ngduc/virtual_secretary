@@ -34,7 +34,7 @@ public class ApplicationInitConfig {
                         .degree(Degree.OTHER)
                         .password(passwordEncoder.encode("admin"))
                         .email("admin@gmail.com")
-                        .role(Role.ADMIN)
+                        .role(Role.ROLE_ADMIN)
                         .build();
                 userRepository.save(user);
             }
