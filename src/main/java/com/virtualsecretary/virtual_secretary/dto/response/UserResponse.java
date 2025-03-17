@@ -28,4 +28,5 @@ public class UserResponse {
     String bankNumber;
     String email;
     Role role;
+    String img;
 }

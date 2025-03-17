@@ -1,5 +1,6 @@
 package com.virtualsecretary.virtual_secretary.dto.response;
 
+import com.virtualsecretary.virtual_secretary.enums.MeetingRole;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -8,8 +9,11 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    String token;
-    boolean authenticated;
+public class MemberResponse {
+    long id;
     UserResponse user;
+    MeetingCreationResponse meeting;
+    MeetingRole meetingRole;
+    String active;
+
 }

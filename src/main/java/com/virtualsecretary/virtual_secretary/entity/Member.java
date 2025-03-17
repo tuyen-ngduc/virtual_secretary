@@ -24,4 +24,7 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     MeetingRole meetingRole;
+
+    @Column(nullable = false)
+    boolean active;
 }

@@ -2,17 +2,12 @@ package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.MeetingCreationResponse;
-import com.virtualsecretary.virtual_secretary.entity.Department;
-import com.virtualsecretary.virtual_secretary.entity.Meeting;
-import com.virtualsecretary.virtual_secretary.entity.Room;
+import com.virtualsecretary.virtual_secretary.entity.*;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.mapper.MeetingMapper;
-import com.virtualsecretary.virtual_secretary.mapper.UserMapper;
-import com.virtualsecretary.virtual_secretary.repository.DepartmentRepository;
-import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
-import com.virtualsecretary.virtual_secretary.repository.RoomRepository;
+import com.virtualsecretary.virtual_secretary.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,8 +26,10 @@ import java.time.LocalDateTime;
 public class MeetingService {
     MeetingRepository meetingRepository;
     RoomRepository roomRepository;
+    MemberRepository memberRepository;
     DepartmentRepository departmentRepository;
     MeetingMapper meetingMapper;
+    UserRepository userRepository;
     @PreAuthorize("hasRole('SECRETARY')")
     public MeetingCreationResponse createMeeting(MeetingCreationRequest request) {
         log.info("Starting to create meeting with request: {}", request);
@@ -50,14 +48,13 @@ public class MeetingService {
         meeting.setDepartment(department);
 
         meetingRepository.save(meeting);
-        return meetingMapper.toMeetingResponse(meeting);
+        return meetingMapper.toMeetingCreationResponse(meeting);
     }
     @Scheduled(initialDelay = 60000, fixedDelay = 60000)
     private MeetingStatus getMeetingStatus(Meeting meeting) {
         var now = LocalDateTime.now();
         var startTime = meeting.getStartTime();
         var endTime = startTime.plusHours(4);
-
         if (startTime.isAfter(now)) {
             if (now.isBefore(startTime.minusHours(2))) {
                 return MeetingStatus.NOT_STARTED;
@@ -72,7 +69,12 @@ public class MeetingService {
         return MeetingStatus.UNKNOWN;
     }
 
+    public List<MeetingCreationResponse> getAllMeetings() {
+        return meetingRepository.findAll().stream().map(meetingMapper::toMeetingCreationResponse).toList();
+    }
 
-
+    public List<MeetingCreationResponse> getMeetingById(long id) {
+        return meetingRepository.findById(id).stream().map(meetingMapper::toMeetingCreationResponse).toList();
+    }
 
 }

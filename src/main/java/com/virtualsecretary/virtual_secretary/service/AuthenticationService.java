@@ -15,6 +15,7 @@ import com.virtualsecretary.virtual_secretary.entity.InvalidatedToken;
 import com.virtualsecretary.virtual_secretary.entity.User;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
+import com.virtualsecretary.virtual_secretary.mapper.UserMapper;
 import com.virtualsecretary.virtual_secretary.repository.InvalidatedTokenRepository;
 import com.virtualsecretary.virtual_secretary.repository.UserRepository;
 import lombok.AccessLevel;
@@ -31,6 +32,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -42,6 +44,7 @@ public class AuthenticationService {
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    UserMapper userMapper;
     @NonFinal
     @Value("${jwt.signerKey}")
     String SIGNER_KEY;
@@ -62,7 +65,7 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        var user = userRepository.findByEmployeeCode(request.getUsername())
+        User user = userRepository.findByEmployeeCode(request.getUsername())
                 .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IndicateException(ErrorCode.INVALID_CREDENTIALS);
@@ -70,6 +73,7 @@ public class AuthenticationService {
         var token = generateToken(user);
         return AuthenticationResponse.builder()
                 .token(token)
+                .user(userMapper.toUserResponse(user))
                 .authenticated(true)
                 .build();
     }
@@ -126,7 +130,7 @@ public class AuthenticationService {
         }
     }
 
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    public SignedJWT verifyToken(String token) throws JOSEException, ParseException {
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
@@ -144,8 +148,6 @@ public class AuthenticationService {
 
         return signedJWT;
     }
-
-
 
 
 }

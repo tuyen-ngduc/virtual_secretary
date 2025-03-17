@@ -9,5 +9,5 @@ import org.mapstruct.Mapper;
 public interface MeetingMapper {
     Meeting toMeeting(MeetingCreationRequest request);
 
-    MeetingCreationResponse toMeetingResponse(Meeting meeting);
+    MeetingCreationResponse toMeetingCreationResponse(Meeting meeting);
 }

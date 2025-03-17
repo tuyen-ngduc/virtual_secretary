@@ -38,6 +38,7 @@ public class AuthenticationController {
             throws ParseException, JOSEException {
         var result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
+                .code(200)
                 .result(result)
                 .build();
     }

@@ -18,7 +18,7 @@ public enum ErrorCode {
     DEPARTMENT_CODE_ALREADY_EXISTS(1017, "Department code already exists", HttpStatus.CONFLICT),
     EMAIL_EXISTED(1010, "Email existed", HttpStatus.BAD_REQUEST),
     VALIDATION_ERROR(400, "Invalid input", HttpStatus.BAD_REQUEST),
-    INVALID_CREDENTIALS(1011, "Incorrect password", HttpStatus.BAD_REQUEST),
+    INVALID_CREDENTIALS(1011, "Incorrect password", HttpStatus.OK),
     JWT_SIGNING_ERROR(1012, "JWT Signing error", HttpStatus.INTERNAL_SERVER_ERROR),
     JWT_INVALID(9998, "JWT Invalid", HttpStatus.BAD_REQUEST),
     OLD_PASSWORD_INCORRECT(1013, "Old password incorrect", HttpStatus.BAD_REQUEST),
@@ -27,6 +27,8 @@ public enum ErrorCode {
     ROOM_CODE_ALREADY_EXISTS(1016, "Room code already exists", HttpStatus.CONFLICT),
     MEETING_EXISTED(1017, "Meeting already existed", HttpStatus.CONFLICT),
     ROLE_INVALID(1018, "Role invalid", HttpStatus.BAD_REQUEST),
+    MEETING_NOT_EXISTED(1019, "Meeting not existed", HttpStatus.NOT_FOUND),
+    MEMBER_EXISTED(1020, "Member existed", HttpStatus.NOT_FOUND),
 
     ;
 
