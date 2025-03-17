@@ -3,6 +3,7 @@ package com.virtualsecretary.virtual_secretary.service;
 import com.virtualsecretary.virtual_secretary.entity.Room;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
+import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import com.virtualsecretary.virtual_secretary.repository.RoomRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Service
 public class RoomService {
+    MeetingRepository meetingRepository;
     RoomRepository roomRepository;
     @PreAuthorize("hasRole('ADMIN')")
     public List<Room> getAllRooms() {
@@ -54,6 +56,8 @@ public class RoomService {
         if (!roomRepository.existsById(id)) {
             throw new IndicateException(ErrorCode.ROOM_NOT_EXISTED);
         }
+
+        meetingRepository.updateRoomInMeetingToNull(id);
         roomRepository.deleteById(id);
     }
 

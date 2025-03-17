@@ -2,9 +2,12 @@ package com.virtualsecretary.virtual_secretary.exception;
 
 import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
+import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -51,6 +54,15 @@ public class GlobalExceptionHandler {
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setCode(ErrorCode.UNAUTHORIZED.getCode());
         apiResponse.setMessage(ErrorCode.UNAUTHORIZED.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiResponse);
+    }
+
+    @ExceptionHandler(JwtException.class)
+    ResponseEntity<ApiResponse> handleJwtException(JwtException exception) {
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(9998);
+        apiResponse.setMessage(ErrorCode.JWT_INVALID.getMessage());
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiResponse);
     }

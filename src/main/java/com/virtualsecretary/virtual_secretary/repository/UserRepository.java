@@ -20,6 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     //khi xóa phòng ban thì dempartmentId của user cập nhật về null
     @Modifying
     @Query("UPDATE User u SET u.department = NULL WHERE u.department.id = :departmentId")
-    void updateDepartmentToNull(@Param("departmentId") long departmentId);
+    void updateDepartmentInUserToNull(@Param("departmentId") long departmentId);
 
 }

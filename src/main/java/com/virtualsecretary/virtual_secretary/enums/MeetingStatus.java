@@ -1,10 +1,12 @@
 package com.virtualsecretary.virtual_secretary.enums;
 
 public enum MeetingStatus {
-    SCHEDULED,
+    UPCOMING,
+    NOT_STARTED,
     ONGOING,
     ENDED,
     CANCELLED,
     POSTPONED,
-    EXPIRED
+    UNKNOWN;
+
 }

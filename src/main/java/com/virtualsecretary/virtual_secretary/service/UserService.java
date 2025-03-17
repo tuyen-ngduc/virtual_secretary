@@ -43,12 +43,14 @@ public class UserService {
         if (userRepository.existsByEmployeeCode(request.getEmployeeCode())) {
             throw new IndicateException(ErrorCode.USER_EXISTED);
         }
+        if (request.getRole() == null || (!request.getRole().equals(Role.ROLE_USER) && !request.getRole().equals(Role.ROLE_SECRETARY))) {
+            throw new IndicateException(ErrorCode.ROLE_INVALID);
+        }
         String formattedDob = request.getDob().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         String password = passwordEncoder.encode(formattedDob);
         User user = userMapper.toUser(request);
         user.setDepartment(department);
         user.setPassword(password);
-        user.setRole(Role.ROLE_USER);
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
@@ -67,6 +69,10 @@ public class UserService {
         }
         if (userRepository.existsByEmployeeCodeAndIdNot(request.getEmployeeCode(), userId)) {
             throw new IndicateException(ErrorCode.USER_EXISTED);
+        }
+
+        if (request.getRole() == null || (!request.getRole().equals(Role.ROLE_USER) && !request.getRole().equals(Role.ROLE_SECRETARY))) {
+            throw new IndicateException(ErrorCode.ROLE_INVALID);
         }
 
         String formattedDob = request.getDob().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));

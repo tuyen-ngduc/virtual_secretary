@@ -20,10 +20,13 @@ public enum ErrorCode {
     VALIDATION_ERROR(400, "Invalid input", HttpStatus.BAD_REQUEST),
     INVALID_CREDENTIALS(1011, "Incorrect password", HttpStatus.BAD_REQUEST),
     JWT_SIGNING_ERROR(1012, "JWT Signing error", HttpStatus.INTERNAL_SERVER_ERROR),
+    JWT_INVALID(9998, "JWT Invalid", HttpStatus.BAD_REQUEST),
     OLD_PASSWORD_INCORRECT(1013, "Old password incorrect", HttpStatus.BAD_REQUEST),
     NEW_PASSWORD_MUST_BE_DIFFERENT(1014, "New password must be different", HttpStatus.BAD_REQUEST),
     ROOM_NOT_EXISTED(1015, "Room not existed", HttpStatus.NOT_FOUND),
     ROOM_CODE_ALREADY_EXISTS(1016, "Room code already exists", HttpStatus.CONFLICT),
+    MEETING_EXISTED(1017, "Meeting already existed", HttpStatus.CONFLICT),
+    ROLE_INVALID(1018, "Role invalid", HttpStatus.BAD_REQUEST),
 
     ;
 

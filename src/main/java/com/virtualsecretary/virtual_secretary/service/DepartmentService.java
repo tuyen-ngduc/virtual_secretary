@@ -4,6 +4,7 @@ import com.virtualsecretary.virtual_secretary.entity.Department;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.repository.DepartmentRepository;
+import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import com.virtualsecretary.virtual_secretary.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -21,6 +22,7 @@ import java.util.List;
 public class DepartmentService {
     DepartmentRepository departmentRepository;
     UserRepository userRepository;
+    MeetingRepository meetingRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     public List<Department> getAllDepartments() {
@@ -63,7 +65,8 @@ public class DepartmentService {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IndicateException(ErrorCode.DEPARTMENT_NOT_EXISTED));
 
-        userRepository.updateDepartmentToNull(id);
+        userRepository.updateDepartmentInUserToNull(id);
+        meetingRepository.updateDepartmentInMeetingToNull(id);
         departmentRepository.deleteById(id);
     }
 }

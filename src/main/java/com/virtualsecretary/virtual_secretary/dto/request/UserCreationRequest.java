@@ -1,6 +1,7 @@
 package com.virtualsecretary.virtual_secretary.dto.request;
 
 import com.virtualsecretary.virtual_secretary.enums.Degree;
+import com.virtualsecretary.virtual_secretary.enums.Role;
 import jakarta.validation.constraints.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -40,6 +41,8 @@ public class UserCreationRequest {
     String bankNumber;
     @Size(min = 5, max = 15, message = "Số điện thoại không hợp lệ")
     String phoneNumber;
+    @NotNull(message = "Role is required")
+    Role role;
 
 }
 
