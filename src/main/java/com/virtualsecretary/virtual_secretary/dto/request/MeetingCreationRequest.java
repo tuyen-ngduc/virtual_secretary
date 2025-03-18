@@ -1,6 +1,5 @@
 package com.virtualsecretary.virtual_secretary.dto.request;
 
-import com.virtualsecretary.virtual_secretary.entity.Department;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

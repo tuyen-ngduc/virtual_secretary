@@ -115,7 +115,7 @@ public class AuthenticationService {
                 .subject(user.getEmployeeCode())
                 .issuer("tuyenngduc")
                 .issueTime(new Date())
-                .expirationTime(new Date(Instant.now().plus(3600, ChronoUnit.SECONDS).toEpochMilli()))
+                .expirationTime(new Date(Instant.now().plus(36000, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", user.getRole())
                 .build();

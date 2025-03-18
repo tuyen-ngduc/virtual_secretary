@@ -3,8 +3,6 @@ package com.virtualsecretary.virtual_secretary.controller;
 import com.virtualsecretary.virtual_secretary.dto.request.AddMemberRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
 import com.virtualsecretary.virtual_secretary.dto.response.MemberResponse;
-import com.virtualsecretary.virtual_secretary.entity.Member;
-import com.virtualsecretary.virtual_secretary.repository.MemberRepository;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;

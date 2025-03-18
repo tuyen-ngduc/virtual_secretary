@@ -23,4 +23,5 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     boolean existsByMeetingCode(String meetingCode);
     Optional<Meeting> findByMeetingCode(String meetingCode);
 
+
 }

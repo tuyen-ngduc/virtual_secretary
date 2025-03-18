@@ -1,6 +1,8 @@
 package com.virtualsecretary.virtual_secretary.repository;
 
+import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.entity.Member;
+import com.virtualsecretary.virtual_secretary.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +19,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByUserIdAndMeetingCode(@Param("userId") String userId, @Param("meetingCode") String meetingCode);
     List<Member> findByMeetingIdAndActiveTrue(Long meetingId);
     List<Member> findByUserIdAndActiveTrue(Long userId);
+
+    List<Member> findByUserId(long userId);
 }

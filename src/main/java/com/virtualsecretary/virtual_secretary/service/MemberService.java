@@ -48,7 +48,6 @@ public class MemberService {
         member.setUser(user);
         member.setMeeting(meeting);
         member.setMeetingRole(request.getMeetingRole());
-        member.setActive(false);
         memberRepository.save(member);
         return memberMapper.toMemberResponse(member);
     }

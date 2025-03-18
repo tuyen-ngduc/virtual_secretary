@@ -2,6 +2,7 @@ package com.virtualsecretary.virtual_secretary.config;
 
 import com.virtualsecretary.virtual_secretary.service.AuthenticationService;
 import lombok.AccessLevel;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-
-import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,16 +51,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(new ChannelInterceptor() {
             @Override
-            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    List<String> authorization = accessor.getNativeHeader("Authorization");
+                    String authorization = accessor.getFirstNativeHeader("Authorization");
                     if (authorization != null && !authorization.isEmpty()) {
-                        String token = authorization.get(0).replace("Bearer ", "");
+                        String token = authorization.replace("Bearer ", "");
 
                         try {
-                            // Verify token
                             var signedJWT = authenticationService.verifyToken(token);
                             String username = signedJWT.getJWTClaimsSet().getSubject();
                             String scope = signedJWT.getJWTClaimsSet().getClaim("scope").toString();
@@ -70,7 +68,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                                     username,
                                     null,
-                                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + scope))
+                                    Collections.singletonList(new SimpleGrantedAuthority(scope))
                             );
 
                             SecurityContextHolder.getContext().setAuthentication(auth);

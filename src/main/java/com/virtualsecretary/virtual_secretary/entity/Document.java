@@ -21,6 +21,7 @@ public class Document {
     String name;
     @Lob
     String content;
-
-
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    User user;
 }

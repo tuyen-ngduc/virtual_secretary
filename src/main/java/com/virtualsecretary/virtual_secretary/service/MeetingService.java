@@ -7,6 +7,7 @@ import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.mapper.MeetingMapper;
+import com.virtualsecretary.virtual_secretary.mapper.MemberMapper;
 import com.virtualsecretary.virtual_secretary.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,7 +31,9 @@ public class MeetingService {
     MemberRepository memberRepository;
     DepartmentRepository departmentRepository;
     MeetingMapper meetingMapper;
+    MemberMapper memberMapper;
     UserRepository userRepository;
+
     @PreAuthorize("hasRole('SECRETARY')")
     public MeetingCreationResponse createMeeting(MeetingCreationRequest request) {
         log.info("Starting to create meeting with request: {}", request);
@@ -50,6 +54,7 @@ public class MeetingService {
         meetingRepository.save(meeting);
         return meetingMapper.toMeetingCreationResponse(meeting);
     }
+
     @Scheduled(initialDelay = 60000, fixedDelay = 60000)
     private MeetingStatus getMeetingStatus(Meeting meeting) {
         var now = LocalDateTime.now();
@@ -73,8 +78,14 @@ public class MeetingService {
         return meetingRepository.findAll().stream().map(meetingMapper::toMeetingCreationResponse).toList();
     }
 
-    public List<MeetingCreationResponse> getMeetingById(long id) {
-        return meetingRepository.findById(id).stream().map(meetingMapper::toMeetingCreationResponse).toList();
+    public List<MeetingCreationResponse> getMyMeetings(long userId) {
+
+        List<Member> members = memberRepository.findByUserId(userId);
+
+        return members.stream()
+                .map(Member::getMeeting)
+                .map(meetingMapper::toMeetingCreationResponse)
+                .collect(Collectors.toList());
     }
 
 }
