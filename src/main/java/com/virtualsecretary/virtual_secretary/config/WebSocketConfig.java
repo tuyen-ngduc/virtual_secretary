@@ -63,8 +63,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             var signedJWT = authenticationService.verifyToken(token);
                             String username = signedJWT.getJWTClaimsSet().getSubject();
                             String scope = signedJWT.getJWTClaimsSet().getClaim("scope").toString();
-
-                            // Create authentication object
                             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                                     username,
                                     null,

@@ -75,7 +75,7 @@ public class MemberService {
 
     public List<MemberResponse> getActiveMembers(String meetingCode) {
         Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
-                .orElseThrow(() -> new RuntimeException("Meeting not found"));
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
         List<Member> activeMembers = memberRepository.findByMeetingIdAndActiveTrue(meeting.getId());
 

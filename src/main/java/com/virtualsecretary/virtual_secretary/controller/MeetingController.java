@@ -61,7 +61,6 @@ public class MeetingController {
     }
 
 
-    @PreAuthorize("isAuthenticated()")
     @MessageMapping("/join")
     public void joinRoom(@Payload JoinRoomRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
         try {
