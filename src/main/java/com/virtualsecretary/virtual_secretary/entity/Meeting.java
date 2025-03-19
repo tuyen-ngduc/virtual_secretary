@@ -30,10 +30,18 @@ public class Meeting {
     String name;
     @Column(nullable = false)
     LocalDateTime startTime;
-    LocalDateTime endTime;
+
+    @Column(nullable = false)
+    int duration;
 
     @Enumerated(EnumType.STRING)
     MeetingStatus status;
+
+    public LocalDateTime getEndTime() {
+        return startTime.plusMinutes(duration);
+
+    }
+
 
 }
 

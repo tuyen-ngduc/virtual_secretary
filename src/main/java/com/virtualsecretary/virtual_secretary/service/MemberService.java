@@ -33,6 +33,7 @@ public class MemberService {
     UserRepository userRepository;
     MeetingRepository meetingRepository;
     MemberMapper memberMapper;
+    UserMapper userMapper;
 
     @PreAuthorize("hasRole('ROLE_SECRETARY')")
     public MemberResponse addMemberToMeeting(AddMemberRequest request) {
@@ -43,7 +44,7 @@ public class MemberService {
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_EXISTED));
 
 
-        Optional<Member> existing = memberRepository.findByUserIdAndMeetingId(user.getId(), meeting.getId());
+        Optional<Member> existing = memberRepository.validateMember(user.getId(), meeting.getId(), meeting.getEndTime(), meeting.getStartTime());
         if (existing.isPresent()) {
             throw new IndicateException(ErrorCode.MEMBER_EXISTED);
         }
@@ -87,22 +88,20 @@ public class MemberService {
                      .email(u.getEmail())
                      .build();
          }).toList();
-     }catch (Exception e) {
-         throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+     }catch(Exception e) {
+        throw new IndicateException(ErrorCode.MEETING_NOT_EXISTED);
      }
 
     }
     public void deactivateMemberByEmployeeCode(String employeeCode) {
-        try {
-            List<Member> members = memberRepository.findActiveMembers(employeeCode);
-            for (Member m : members) {
-                m.setActive(false);
-            }
-            memberRepository.saveAll(members);
-        }catch (Exception e) {
-            throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
+        User user = userRepository.findByEmployeeCode(employeeCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
 
+        List<Member> members = memberRepository.findByUserIdAndActiveTrue(user.getId());
+        for (Member m : members) {
+            m.setActive(false);
+        }
+        memberRepository.saveAll(members);
     }
 
 
