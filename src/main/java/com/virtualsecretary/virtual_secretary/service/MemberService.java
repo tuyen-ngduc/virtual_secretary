@@ -2,12 +2,14 @@ package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.AddMemberRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.MemberResponse;
+import com.virtualsecretary.virtual_secretary.dto.response.UserJoinMeetingResponse;
 import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.entity.Member;
 import com.virtualsecretary.virtual_secretary.entity.User;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.mapper.MemberMapper;
+import com.virtualsecretary.virtual_secretary.mapper.UserMapper;
 import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import com.virtualsecretary.virtual_secretary.repository.MemberRepository;
 import com.virtualsecretary.virtual_secretary.repository.UserRepository;
@@ -31,7 +33,8 @@ public class MemberService {
     UserRepository userRepository;
     MeetingRepository meetingRepository;
     MemberMapper memberMapper;
-@PreAuthorize("hasRole('ROLE_SECRETARY')")
+
+    @PreAuthorize("hasRole('ROLE_SECRETARY')")
     public MemberResponse addMemberToMeeting(AddMemberRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
@@ -72,26 +75,34 @@ public class MemberService {
         member.setActive(true);
         memberRepository.save(member);
     }
+    public List<UserJoinMeetingResponse> getActiveMembers(String meetingCode) {
+     try {
+         List<Member> members = memberRepository.findActiveMembers(meetingCode);
+         return members.stream().map(member -> {
+             User u = member.getUser();
+             return UserJoinMeetingResponse.builder()
+                     .img(u.getImg())
+                     .name(u.getName())
+                     .employeeCode(u.getEmployeeCode())
+                     .email(u.getEmail())
+                     .build();
+         }).toList();
+     }catch (Exception e) {
+         throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+     }
 
-    public List<MemberResponse> getActiveMembers(String meetingCode) {
-        Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
-
-        List<Member> activeMembers = memberRepository.findByMeetingIdAndActiveTrue(meeting.getId());
-
-        return activeMembers.stream()
-                .map(memberMapper::toMemberResponse)
-                .collect(Collectors.toList());
     }
     public void deactivateMemberByEmployeeCode(String employeeCode) {
-        User user = userRepository.findByEmployeeCode(employeeCode)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        List<Member> members = memberRepository.findByUserIdAndActiveTrue(user.getId());
-        for (Member m : members) {
-            m.setActive(false);
+        try {
+            List<Member> members = memberRepository.findActiveMembers(employeeCode);
+            for (Member m : members) {
+                m.setActive(false);
+            }
+            memberRepository.saveAll(members);
+        }catch (Exception e) {
+            throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
-        memberRepository.saveAll(members);
+
     }
 
 

@@ -13,12 +13,13 @@ import java.util.Optional;
 
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
+
+
     Optional<Member> findByUserIdAndMeetingId(Long userId, Long meetingId);
     List<Member> findByMeetingId(Long meetingId);
-    @Query("SELECT m FROM Member m WHERE m.user.id = :userId AND m.meeting.meetingCode = :meetingCode")
-    Optional<Member> findByUserIdAndMeetingCode(@Param("userId") String userId, @Param("meetingCode") String meetingCode);
-    List<Member> findByMeetingIdAndActiveTrue(Long meetingId);
-    List<Member> findByUserIdAndActiveTrue(Long userId);
 
+    @Query("SELECT m FROM Member m WHERE m.active = true AND m.meeting.meetingCode= :meetingCode")
+
+    List<Member> findActiveMembers(String meetingCode);
     List<Member> findByUserId(long userId);
 }

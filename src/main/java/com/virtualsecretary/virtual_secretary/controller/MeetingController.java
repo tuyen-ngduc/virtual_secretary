@@ -2,10 +2,7 @@ package com.virtualsecretary.virtual_secretary.controller;
 
 import com.virtualsecretary.virtual_secretary.dto.request.JoinRoomRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
-import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
-import com.virtualsecretary.virtual_secretary.dto.response.MeetingCreationResponse;
-import com.virtualsecretary.virtual_secretary.dto.response.MemberResponse;
-import com.virtualsecretary.virtual_secretary.dto.response.Notification;
+import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
 import jakarta.validation.Valid;
@@ -71,7 +68,7 @@ public class MeetingController {
             memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
             messagingTemplate.convertAndSend("/topic/meeting/" + request.getMeetingCode(),
                     new Notification("User " + employeeCode + " đã tham gia cuộc họp"));
-            List<MemberResponse> activeMembers = memberService.getActiveMembers(request.getMeetingCode());
+            List<UserJoinMeetingResponse> activeMembers = memberService.getActiveMembers(request.getMeetingCode());
             messagingTemplate.convertAndSendToUser(employeeCode, "/queue/active-members", activeMembers);
             messagingTemplate.convertAndSend("/topic/meeting/" + request.getMeetingCode() + "/members", activeMembers);
         } catch (Exception e) {
@@ -97,7 +94,7 @@ public class MeetingController {
                     messagingTemplate.convertAndSend("/topic/meeting/" + meetingCode,
                             new Notification("User " + employeeCode + " đã rời khỏi cuộc họp"));
 
-                    List<MemberResponse> activeMembers = memberService.getActiveMembers(meetingCode);
+                    List<UserJoinMeetingResponse> activeMembers = memberService.getActiveMembers(meetingCode);
                     messagingTemplate.convertAndSend("/topic/meeting/" + meetingCode + "/members", activeMembers);
                 }
             } catch (Exception e) {
