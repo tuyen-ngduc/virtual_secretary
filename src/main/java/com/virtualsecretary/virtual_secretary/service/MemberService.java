@@ -104,8 +104,9 @@ public class MemberService {
         memberRepository.saveAll(members);
     }
 
-    public UserJoinMeetingResponse getUserJoinInfo(String employeeCode) {
-        Member member = memberRepository.findByUserEmployeeCode(employeeCode)
+    public UserJoinMeetingResponse getUserJoinInfo(String employeeCode, String meetingCode) {
+        Member member = memberRepository
+                .findByUserEmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
 
         User user = member.getUser();
@@ -116,8 +117,8 @@ public class MemberService {
                 user.getImg(),
                 member.getMeetingRole()
         );
-
     }
+
 
 
 

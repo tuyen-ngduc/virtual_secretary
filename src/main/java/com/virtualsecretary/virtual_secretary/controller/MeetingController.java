@@ -64,8 +64,8 @@ public class MeetingController {
         try {
 
             String employeeCode = principal.getName();
-            UserJoinMeetingResponse user = memberService.getUserJoinInfo(employeeCode);
-            String socketId = UUID.randomUUID().toString();
+            UserJoinMeetingResponse user = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
+            String socketId = headerAccessor.getSessionId();
 
 
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("userId", user.getEmployeeCode());
@@ -74,8 +74,8 @@ public class MeetingController {
 
 
             Map<String, Object> userJoinedMessage = new HashMap<>();
-            userJoinedMessage.put("users", user);
-            userJoinedMessage.put("id", socketId);
+            userJoinedMessage.put("user", user);
+            userJoinedMessage.put("socketId", socketId);
 
             messagingTemplate.convertAndSend(
                     "/app/user-join",
@@ -83,8 +83,8 @@ public class MeetingController {
             );
 
             JoinResponse joinResponse = new JoinResponse();
-            joinResponse.setRoom(request.getMeetingCode());
-            joinResponse.setIsC(request.getIsTurnOnCamera());
+            joinResponse.setMeetingCode(request.getMeetingCode());
+            joinResponse.setIsTurnOnCamera(request.getIsTurnOnCamera());
 
             messagingTemplate.convertAndSendToUser(
                     employeeCode,

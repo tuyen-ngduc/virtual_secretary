@@ -9,6 +9,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JoinResponse {
-    private String room;
-    private Boolean isC;
+    private String meetingCode;
+    private Boolean isTurnOnCamera;
 }
