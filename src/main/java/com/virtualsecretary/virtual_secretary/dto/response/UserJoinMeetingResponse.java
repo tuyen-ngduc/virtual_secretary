@@ -17,6 +17,4 @@ public class UserJoinMeetingResponse {
     String img;
     MeetingRole meetingRole;
 
-
-
 }

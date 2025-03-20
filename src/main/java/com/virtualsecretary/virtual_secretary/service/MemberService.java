@@ -104,6 +104,21 @@ public class MemberService {
         memberRepository.saveAll(members);
     }
 
+    public UserJoinMeetingResponse getUserJoinInfo(String employeeCode) {
+        Member member = memberRepository.findByUserEmployeeCode(employeeCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
+
+        User user = member.getUser();
+        return new UserJoinMeetingResponse(
+                user.getEmployeeCode(),
+                user.getName(),
+                user.getEmail(),
+                user.getImg(),
+                member.getMeetingRole()
+        );
+
+    }
+
 
 
 }

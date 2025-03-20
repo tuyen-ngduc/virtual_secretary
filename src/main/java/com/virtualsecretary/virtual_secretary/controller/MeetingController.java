@@ -1,6 +1,6 @@
 package com.virtualsecretary.virtual_secretary.controller;
 
-import com.virtualsecretary.virtual_secretary.dto.request.JoinRoomRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
@@ -15,13 +15,11 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -32,6 +30,9 @@ public class MeetingController {
     MeetingService meetingService;
     SimpMessagingTemplate messagingTemplate;
     MemberService memberService;
+
+
+
 
     @GetMapping
     public ApiResponse<List<MeetingCreationResponse>> getAllMeetings() {
@@ -59,24 +60,50 @@ public class MeetingController {
 
 
     @MessageMapping("/join")
-    public void joinRoom(@Payload JoinRoomRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+    public void joinRoom(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
         try {
+
             String employeeCode = principal.getName();
-            log.info("User {} is joining meeting with code {}", employeeCode, request.getMeetingCode());
-            Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("meetingCode", request.getMeetingCode());
-            headerAccessor.getSessionAttributes().put("employeeCode", employeeCode);
-            memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
-            messagingTemplate.convertAndSend("/topic/meeting/" + request.getMeetingCode(),
-                    new Notification("User " + employeeCode + " đã tham gia cuộc họp"));
-            List<UserJoinMeetingResponse> activeMembers = memberService.getActiveMembers(request.getMeetingCode());
-            messagingTemplate.convertAndSendToUser(employeeCode, "/queue/active-members", activeMembers);
-            messagingTemplate.convertAndSend("/topic/meeting/" + request.getMeetingCode() + "/members", activeMembers);
+            UserJoinMeetingResponse user = memberService.getUserJoinInfo(employeeCode);
+            String socketId = UUID.randomUUID().toString();
+
+
+            Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("userId", user.getEmployeeCode());
+            headerAccessor.getSessionAttributes().put("socketId", socketId);
+            headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
+
+
+            Map<String, Object> userJoinedMessage = new HashMap<>();
+            userJoinedMessage.put("users", user);
+            userJoinedMessage.put("id", socketId);
+
+            messagingTemplate.convertAndSend(
+                    "/app/user-join",
+                    userJoinedMessage
+            );
+
+            JoinResponse joinResponse = new JoinResponse();
+            joinResponse.setRoom(request.getMeetingCode());
+            joinResponse.setIsC(request.getIsTurnOnCamera());
+
+            messagingTemplate.convertAndSendToUser(
+                    employeeCode,
+                    "/queue/join",
+                    joinResponse
+            );
+
+            log.info("User {} joined meeting {}", user.getEmployeeCode(), request.getMeetingCode());
         } catch (Exception e) {
             log.error("Error during join room process", e);
-            messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/errors",
-                    new Notification("Error joining meeting: " + e.getMessage()));
+            messagingTemplate.convertAndSendToUser(
+                    principal.getName(),
+                    "/queue/errors",
+                    Map.of("message", "Error joining meeting: " + e.getMessage())
+            );
         }
     }
+
+
 
     @EventListener
     public void handleDisconnect(SessionDisconnectEvent event) {

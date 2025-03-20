@@ -2,6 +2,7 @@ package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.MeetingCreationResponse;
+import com.virtualsecretary.virtual_secretary.dto.response.UserJoinMeetingResponse;
 import com.virtualsecretary.virtual_secretary.entity.*;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
@@ -87,5 +88,6 @@ public class MeetingService {
                 .map(meetingMapper::toMeetingCreationResponse)
                 .collect(Collectors.toList());
     }
+
 
 }

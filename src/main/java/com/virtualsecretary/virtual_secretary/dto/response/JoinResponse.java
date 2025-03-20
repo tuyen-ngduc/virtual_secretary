@@ -1,4 +1,4 @@
-package com.virtualsecretary.virtual_secretary.dto.request;
+package com.virtualsecretary.virtual_secretary.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JoinRoomRequest {
-    String meetingCode;
+public class JoinResponse {
+    private String room;
+    private Boolean isC;
 }
