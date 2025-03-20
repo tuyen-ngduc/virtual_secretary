@@ -33,7 +33,6 @@ public class MemberService {
     UserRepository userRepository;
     MeetingRepository meetingRepository;
     MemberMapper memberMapper;
-    UserMapper userMapper;
 
     @PreAuthorize("hasRole('ROLE_SECRETARY')")
     public MemberResponse addMemberToMeeting(AddMemberRequest request) {
@@ -44,10 +43,7 @@ public class MemberService {
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_EXISTED));
 
 
-        Optional<Member> existing = memberRepository.validateMember(user.getId(), meeting.getId(), meeting.getEndTime(), meeting.getStartTime());
-        if (existing.isPresent()) {
-            throw new IndicateException(ErrorCode.MEMBER_EXISTED);
-        }
+
         Member member = new Member();
         member.setUser(user);
         member.setMeeting(meeting);

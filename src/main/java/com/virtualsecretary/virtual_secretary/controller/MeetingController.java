@@ -3,6 +3,7 @@ package com.virtualsecretary.virtual_secretary.controller;
 import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
+import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
 import jakarta.validation.Valid;
@@ -72,6 +73,7 @@ public class MeetingController {
             headerAccessor.getSessionAttributes().put("socketId", socketId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
             log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
+
             memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
 
             Map<String, Object> userJoinedMessage = new HashMap<>();
@@ -121,5 +123,20 @@ public class MeetingController {
             }
         }
     }
+
+    @MessageMapping("/user-call")
+    public void signaling(@Payload Map<String, Object> payload, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+        String meetingCode = (String) payload.get("meetingCode");
+        Map<String, Object> offer = (Map<String, Object>) payload.get("offer");
+        String member = principal.getName();
+        String socketId = headerAccessor.getSessionId();
+        Map<String, Object> offerMessage = new HashMap<>();
+        offerMessage.put("newMember", member);
+        offerMessage.put("socketId", socketId);
+        offerMessage.put("offer", offer);
+        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/offers", offerMessage);
+
+    }
+
 
 }

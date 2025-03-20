@@ -1,4 +1,4 @@
-package com.virtualsecretary.virtual_secretary.dto.response;
+package com.virtualsecretary.virtual_secretary.payload;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
