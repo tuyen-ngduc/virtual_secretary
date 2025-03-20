@@ -64,36 +64,27 @@ public class MeetingController {
         try {
 
             String employeeCode = principal.getName();
-            UserJoinMeetingResponse user = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
+            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
+            UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
             String socketId = headerAccessor.getSessionId();
 
-
-            Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("userId", user.getEmployeeCode());
+            Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
             headerAccessor.getSessionAttributes().put("socketId", socketId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
-
+            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
+            memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
 
             Map<String, Object> userJoinedMessage = new HashMap<>();
-            userJoinedMessage.put("user", user);
+            userJoinedMessage.put("member", member);
             userJoinedMessage.put("socketId", socketId);
-
-            messagingTemplate.convertAndSend(
-                    "/topic/room/" + request.getMeetingCode(),
-                    userJoinedMessage
-            );
-
+            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
+            log.info("Signed for everyone in the meeting");
 
             JoinResponse joinResponse = new JoinResponse();
             joinResponse.setMeetingCode(request.getMeetingCode());
             joinResponse.setIsTurnOnCamera(request.getIsTurnOnCamera());
-
-            messagingTemplate.convertAndSendToUser(
-                    employeeCode,
-                    "/queue/join",
-                    joinResponse
-            );
-
-            log.info("User {} joined meeting {}", user.getEmployeeCode(), request.getMeetingCode());
+            messagingTemplate.convertAndSendToUser(employeeCode, "/queue/join", joinResponse);
+            log.info("User {} joined meeting {}", member.getEmployeeCode(), request.getMeetingCode());
         } catch (Exception e) {
             log.error("Error during join room process", e);
             messagingTemplate.convertAndSendToUser(
@@ -116,7 +107,7 @@ public class MeetingController {
             log.info("User {} disconnected from meeting {}", employeeCode, meetingCode);
 
             try {
-                memberService.deactivateMemberByEmployeeCode(employeeCode);
+                memberService.deactivateMemberByEmployeeCode(employeeCode, meetingCode);
 
                 if (meetingCode != null) {
                     messagingTemplate.convertAndSend("/topic/meeting/" + meetingCode,

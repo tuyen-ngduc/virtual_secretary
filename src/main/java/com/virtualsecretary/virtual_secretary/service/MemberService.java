@@ -64,14 +64,8 @@ public class MemberService {
     }
 
     public void validateAndActivateMember(String employeeCode, String meetingCode) {
-        User user = userRepository.findByEmployeeCode(employeeCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
-
-        Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
-
-        Member member = memberRepository.findByUserIdAndMeetingId(user.getId(), meeting.getId())
-                .orElseThrow(() -> new IndicateException(ErrorCode.UNAUTHORIZED));
+        Member member = memberRepository.findByUser_EmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
 
         member.setActive(true);
         memberRepository.save(member);
@@ -93,20 +87,16 @@ public class MemberService {
      }
 
     }
-    public void deactivateMemberByEmployeeCode(String employeeCode) {
-        User user = userRepository.findByEmployeeCode(employeeCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
-
-        List<Member> members = memberRepository.findByUserIdAndActiveTrue(user.getId());
-        for (Member m : members) {
-            m.setActive(false);
-        }
-        memberRepository.saveAll(members);
+    public void deactivateMemberByEmployeeCode(String employeeCode, String meetingCode) {
+        Member member = memberRepository.findByUser_EmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
+        member.setActive(false);
+        memberRepository.save(member);
     }
 
     public UserJoinMeetingResponse getUserJoinInfo(String employeeCode, String meetingCode) {
         Member member = memberRepository
-                .findByUserEmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)
+                .findByUser_EmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
 
         User user = member.getUser();

@@ -14,8 +14,6 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
     List<Member> findByUserIdAndActiveTrue(long userId);
-    Optional<Member> findByUserIdAndMeetingId(Long userId, Long meetingId);
-
 
 @Query("SELECT m.meeting FROM Member m WHERE m.user.id = :userId " +
         "AND m.meeting.id <> :meetingId " +
@@ -26,12 +24,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
                                     @Param("meetingId") Long meetingId,
                                     @Param("endTime") LocalDateTime endTime,
                                     @Param("startTime") LocalDateTime startTime);
-    List<Member> findByMeetingId(Long meetingId);
 
+    List<Member> findByMeetingId(Long meetingId);
     @Query("SELECT m FROM Member m WHERE m.active = true AND m.meeting.meetingCode= :meetingCode")
     List<Member> findActiveMembers(String meetingCode);
     List<Member> findByUserId(long userId);
-    Optional<Member> findByUserEmployeeCodeAndMeeting_MeetingCode(String employeeCode, String meetingCode);
+
+    Optional<Member> findByUser_EmployeeCodeAndMeeting_MeetingCode(String userEmployeeCode, String meetingMeetingCode);
 
 
 }
