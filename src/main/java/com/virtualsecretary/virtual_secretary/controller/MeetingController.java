@@ -78,9 +78,10 @@ public class MeetingController {
             userJoinedMessage.put("socketId", socketId);
 
             messagingTemplate.convertAndSend(
-                    "/app/user-join",
+                    "/topic/room/" + request.getMeetingCode(),
                     userJoinedMessage
             );
+
 
             JoinResponse joinResponse = new JoinResponse();
             joinResponse.setMeetingCode(request.getMeetingCode());

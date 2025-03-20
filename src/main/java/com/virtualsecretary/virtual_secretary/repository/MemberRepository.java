@@ -15,6 +15,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     List<Member> findByUserIdAndActiveTrue(long userId);
     Optional<Member> findByUserIdAndMeetingId(Long userId, Long meetingId);
+
+
 @Query("SELECT m.meeting FROM Member m WHERE m.user.id = :userId " +
         "AND m.meeting.id <> :meetingId " +
         " AND m.meeting.startTime < :endTime " +
