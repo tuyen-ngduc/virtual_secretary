@@ -4,6 +4,7 @@ import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
+import com.virtualsecretary.virtual_secretary.payload.Signal;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
 import jakarta.validation.Valid;
@@ -124,19 +125,40 @@ public class MeetingController {
         }
     }
 
-    @MessageMapping("/user-call")
-    public void signaling(@Payload Map<String, Object> payload, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
-        String meetingCode = (String) payload.get("meetingCode");
-        Map<String, Object> offer = (Map<String, Object>) payload.get("offer");
-        String member = principal.getName();
-        String socketId = headerAccessor.getSessionId();
+    @MessageMapping("/offer-call")
+    public void signaling(@Payload Signal signal, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+        String meetingCode = signal.getMeetingCode();
+        Map<String, Object> offer =  signal.getOffer();
+        UserJoinMeetingResponse member = memberService.getUserJoinInfo(principal.getName(), meetingCode);
         Map<String, Object> offerMessage = new HashMap<>();
-        offerMessage.put("newMember", member);
-        offerMessage.put("socketId", socketId);
+
         offerMessage.put("offer", offer);
+        offerMessage.put("member", member);
+        offerMessage.put("Camerea", signal.isC());
+        offerMessage.put("Screen", signal.isS());
+        offerMessage.put("Mic", signal.isM());
         messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/offers", offerMessage);
 
     }
+
+    @MessageMapping("/answer-call")
+    public void signalingAnswer(@Payload Signal signal, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+        String meetingCode = signal.getMeetingCode();
+        Map<String, Object> answer = signal.getOffer();
+        String targetUser = signal.getTo();
+
+        UserJoinMeetingResponse member = memberService.getUserJoinInfo(principal.getName(), meetingCode);
+
+        Map<String, Object> answerMessage = new HashMap<>();
+        answerMessage.put("answer", answer);
+        answerMessage.put("member", member);
+        answerMessage.put("Camerea", signal.isC());
+        answerMessage.put("Screen", signal.isS());
+        answerMessage.put("Mic", signal.isM());
+
+        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/answers/" + targetUser, answerMessage);
+    }
+
 
 
 }
