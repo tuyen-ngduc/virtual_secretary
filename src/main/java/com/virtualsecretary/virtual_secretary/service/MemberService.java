@@ -106,11 +106,13 @@ public class MemberService {
     }
 
     public List<Member> getAllMembersExcept(String employeeCode, String meetingCode) {
+
         List<Member> allMembers = memberRepository.findActiveMembers(meetingCode);
         return allMembers.stream()
                 .filter(member -> !member.getUser().getEmployeeCode().equals(employeeCode))
                 .collect(Collectors.toList());
     }
+
 
 
 

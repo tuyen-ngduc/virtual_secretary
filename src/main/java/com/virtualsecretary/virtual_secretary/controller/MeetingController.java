@@ -18,8 +18,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.user.SimpUser;
-import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
@@ -35,10 +33,6 @@ public class MeetingController {
     MeetingService meetingService;
     SimpMessagingTemplate messagingTemplate;
     MemberService memberService;
-    SimpUserRegistry simpUserRegistry;
-
-
-
 
 
     @GetMapping
@@ -131,7 +125,7 @@ public class MeetingController {
     }
 
     @MessageMapping("/offer-call")
-    public void signaling(@Payload Signal signal, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+    public void signaling(@Payload Signal signal, Principal principal) {
         String meetingCode = signal.getMeetingCode();
         Map<String, Object> offer =  signal.getOffer();
         UserJoinMeetingResponse member = memberService.getUserJoinInfo(principal.getName(), meetingCode);
@@ -139,23 +133,25 @@ public class MeetingController {
 
         offerMessage.put("offer", offer);
         offerMessage.put("member", member);
-        offerMessage.put("Camerea", signal.isC());
+        offerMessage.put("Camere", signal.isC());
         offerMessage.put("Screen", signal.isS());
         offerMessage.put("Mic", signal.isM());
-        for (Member otherMember : memberService.getAllMembersExcept(principal.getName(), meetingCode)) {
+
+        List<Member> otherMembers = memberService.getAllMembersExcept(principal.getName(), meetingCode);
+        for (Member otherMember : otherMembers) {
             messagingTemplate.convertAndSendToUser(
                     otherMember.getUser().getEmployeeCode(),
                     "/queue/offer",
-                    offerMessage,
-                    headerAccessor.getMessageHeaders()
+                    offerMessage
             );
         }
+//        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/offers", offerMessage);
 
 
     }
 
     @MessageMapping("/answer-call")
-    public void signalingAnswer(@Payload Signal signal, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+    public void signalingAnswer(@Payload Signal signal, Principal principal) {
         String meetingCode = signal.getMeetingCode();
         Map<String, Object> answer = signal.getOffer();
         String targetUser = signal.getTo();
@@ -165,7 +161,7 @@ public class MeetingController {
         Map<String, Object> answerMessage = new HashMap<>();
         answerMessage.put("answer", answer);
         answerMessage.put("member", member);
-        answerMessage.put("Camerea", signal.isC());
+        answerMessage.put("Camere", signal.isC());
         answerMessage.put("Screen", signal.isS());
         answerMessage.put("Mic", signal.isM());
 
