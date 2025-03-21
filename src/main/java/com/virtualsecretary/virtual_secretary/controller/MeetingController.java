@@ -3,6 +3,7 @@ package com.virtualsecretary.virtual_secretary.controller;
 import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
+import com.virtualsecretary.virtual_secretary.entity.Member;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.payload.Signal;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
@@ -84,17 +85,7 @@ public class MeetingController {
             Map<String, Object> userJoinedMessage = new HashMap<>();
             userJoinedMessage.put("member", member);
             userJoinedMessage.put("socketId", socketId);
-//            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
-            for (SimpUser user : simpUserRegistry.getUsers()) {
-                if (!user.getName().equals(employeeCode)) {
-                    messagingTemplate.convertAndSendToUser(
-                            user.getName(),
-                            "/queue/room/" + request.getMeetingCode(),
-                            userJoinedMessage
-                    );
-                }
-            }
-
+            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
             log.info("Signed for everyone in the meeting");
 
             JoinResponse joinResponse = new JoinResponse();
@@ -151,7 +142,15 @@ public class MeetingController {
         offerMessage.put("Camerea", signal.isC());
         offerMessage.put("Screen", signal.isS());
         offerMessage.put("Mic", signal.isM());
-        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/offers", offerMessage);
+        for (Member otherMember : memberService.getAllMembersExcept(principal.getName(), meetingCode)) {
+            messagingTemplate.convertAndSendToUser(
+                    otherMember.getUser().getEmployeeCode(),
+                    "/queue/offer",
+                    offerMessage,
+                    headerAccessor.getMessageHeaders()
+            );
+        }
+
 
     }
 
