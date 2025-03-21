@@ -17,6 +17,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.user.SimpUser;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
@@ -32,6 +34,8 @@ public class MeetingController {
     MeetingService meetingService;
     SimpMessagingTemplate messagingTemplate;
     MemberService memberService;
+    SimpUserRegistry simpUserRegistry;
+
 
 
 
@@ -80,7 +84,17 @@ public class MeetingController {
             Map<String, Object> userJoinedMessage = new HashMap<>();
             userJoinedMessage.put("member", member);
             userJoinedMessage.put("socketId", socketId);
-            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
+//            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
+            for (SimpUser user : simpUserRegistry.getUsers()) {
+                if (!user.getName().equals(employeeCode)) {
+                    messagingTemplate.convertAndSendToUser(
+                            user.getName(),
+                            "/queue/room/" + request.getMeetingCode(),
+                            userJoinedMessage
+                    );
+                }
+            }
+
             log.info("Signed for everyone in the meeting");
 
             JoinResponse joinResponse = new JoinResponse();
