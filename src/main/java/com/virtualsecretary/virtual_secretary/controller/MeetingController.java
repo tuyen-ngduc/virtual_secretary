@@ -70,11 +70,11 @@ public class MeetingController {
             log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
 
             UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
-            String socketId = headerAccessor.getSessionId();
+            String sessionId = headerAccessor.getSessionId();
             String peerId = request.getPeerId();
 
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
-            headerAccessor.getSessionAttributes().put("socketId", socketId);
+            headerAccessor.getSessionAttributes().put("sessionId", sessionId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
 
             memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
@@ -146,7 +146,7 @@ public class MeetingController {
                 .member(member)
                 .payload(Map.of("members", participants))
                 .build();
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room" + meetingCode,signal);
+        messagingTemplate.convertAndSendToUser(headerAccessor.getSessionId(), "/queue/room" + meetingCode,signal);
         log.info("Sending participant list to {}: {}", peerId, participants);
 
         return participants;
