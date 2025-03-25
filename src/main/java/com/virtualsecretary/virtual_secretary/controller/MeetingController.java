@@ -3,10 +3,9 @@ package com.virtualsecretary.virtual_secretary.controller;
 import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
-import com.virtualsecretary.virtual_secretary.entity.Member;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.payload.Signal;
-import com.virtualsecretary.virtual_secretary.repository.MemberRepository;
+import com.virtualsecretary.virtual_secretary.service.MeetingParticipantManager;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
 import jakarta.validation.Valid;
@@ -17,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +33,7 @@ public class MeetingController {
     MeetingService meetingService;
     SimpMessagingTemplate messagingTemplate;
     MemberService memberService;
-    MemberRepository memberRepository;
+    MeetingParticipantManager participantManager;
 
 
     @GetMapping
@@ -63,43 +61,7 @@ public class MeetingController {
     }
 
 
-//    @MessageMapping("/join")
-//    public void joinRoom(@Payload Signal request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
-//        try {
-//
-//            String employeeCode = principal.getName();
-//            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
-//            UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
-//            String peerId = request.getPeerId();
-//
-//            Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
-//            headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
-//            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
-//
-//            memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
-//
-//            Map<String, Object> userJoinedMessage = new HashMap<>();
-//            userJoinedMessage.put("member", member);
-//            userJoinedMessage.put("peerId", peerId);
-//            userJoinedMessage.put("type", )
-//
-//            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
-//            log.info("Gửi cho tất cả mọi người!");
-//
-//            JoinResponse joinResponse = new JoinResponse();
-//            joinResponse.setMeetingCode(request.getMeetingCode());
-//            joinResponse.setPeerId(peerId);
-//            messagingTemplate.convertAndSendToUser(employeeCode, "/queue/join", joinResponse);
-//            log.info("User {} joined meeting {} with PeerId {}", member.getEmployeeCode(), request.getMeetingCode(), peerId);
-//        } catch (Exception e) {
-//            log.error("Error during join room process", e);
-//            messagingTemplate.convertAndSendToUser(
-//                    principal.getName(),
-//                    "/queue/errors",
-//                    Map.of("message", "Error joining meeting: " + e.getMessage())
-//            );
-//        }
-//    }
+
 
     @MessageMapping("/join")
     public void joinRoom(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
@@ -124,6 +86,7 @@ public class MeetingController {
                     .member(member)
                     .payload(Map.of("member", member, "peerId", peerId))
                     .build();
+            participantManager.addParticipant(request.getMeetingCode(), signal);
 
             // Gửi thông báo đến tất cả người trong cuộc họp
             messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), signal);
@@ -169,23 +132,26 @@ public class MeetingController {
         }
     }
 
-//    @MessageMapping("/signal")
-//    public void handleWebRTCSignal(@Payload Signal message, Principal principal) {
-//        if (message.getReceiverId() == null || message.getSenderId() == null || message.getMeetingCode() == null) {
-//            log.error("Missing meetingCode, senderId, or receiverId");
-//            return;
-//        }
-//
-//        log.info("Forwarding {} signal in meeting {} from {} to {}",
-//                message.getType(), message.getMeetingCode(), message.getSenderId(), message.getReceiverId());
-//
-//        // Chỉ gửi nếu receiverId khác senderId
-//        if (!message.getReceiverId().equals(message.getSenderId())) {
-//            messagingTemplate.convertAndSendToUser(
-//                    message.getReceiverId(), "/queue/signal", message
-//            );
-//        }
-//    }
+    @MessageMapping("/participants")
+    public List<Signal> getParticipants(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+        String meetingCode = request.getMeetingCode();
+        String employeeCode = principal.getName();
+        String peerId = request.getPeerId();
+        UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
+        List<Signal> participants = participantManager.getParticipants(meetingCode, peerId);
+        Signal signal = Signal.builder()
+                .type("meeting-users")
+                .from("server")
+                .to(peerId)
+                .member(member)
+                .payload(Map.of("members", participants))
+                .build();
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room" + meetingCode,signal);
+        log.info("Sending participant list to {}: {}", peerId, participants);
+
+        return participants;
+    }
+
 
 
 
