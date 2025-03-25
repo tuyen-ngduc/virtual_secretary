@@ -27,7 +27,7 @@ public class MeetingParticipantManager {
     public List<Signal> getParticipants(String meetingCode, String excludePeerId) {
         return participants.getOrDefault(meetingCode, new ArrayList<>())
                 .stream()
-                .filter(m -> !m.getFrom().equals(excludePeerId)) // Bỏ chính người gọi
+                .filter(m -> !m.getFrom().equals(excludePeerId))
                 .collect(Collectors.toList());
     }
 }

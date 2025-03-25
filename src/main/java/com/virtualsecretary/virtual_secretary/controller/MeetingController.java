@@ -76,6 +76,7 @@ public class MeetingController {
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
             headerAccessor.getSessionAttributes().put("sessionId", sessionId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
+            headerAccessor.getSessionAttributes().put("peerId", peerId);
 
             memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
 
@@ -111,6 +112,7 @@ public class MeetingController {
         SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.wrap(event.getMessage());
         String employeeCode = (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("employeeCode");
         String meetingCode = (String) headerAccessor.getSessionAttributes().get("meetingCode");
+        String peerId = (String) headerAccessor.getSessionAttributes().get("peerId");
 
         if (employeeCode != null) {
             log.info("User {} disconnected from meeting {}", employeeCode, meetingCode);
@@ -118,6 +120,10 @@ public class MeetingController {
             try {
                 memberService.deactivateMemberByEmployeeCode(employeeCode, meetingCode);
                 memberService.updatePeerId(employeeCode, meetingCode, null);
+                if (peerId != null) {
+                    participantManager.removeParticipant(meetingCode, peerId);
+                    log.info("Removed participant {} from meeting {}", peerId, meetingCode);
+                }
 
                 if (meetingCode != null) {
                     messagingTemplate.convertAndSend("/topic/meeting/" + meetingCode,
@@ -133,7 +139,7 @@ public class MeetingController {
     }
 
     @MessageMapping("/participants")
-    public List<Signal> getParticipants(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+    public void getParticipants(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
         String meetingCode = request.getMeetingCode();
         String employeeCode = principal.getName();
         String peerId = request.getPeerId();
@@ -146,10 +152,9 @@ public class MeetingController {
                 .member(member)
                 .payload(Map.of("members", participants))
                 .build();
-        messagingTemplate.convertAndSendToUser(headerAccessor.getSessionId(), "/queue/room" + meetingCode,signal);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room/" + meetingCode,signal);
         log.info("Sending participant list to {}: {}", peerId, participants);
 
-        return participants;
     }
 
 
