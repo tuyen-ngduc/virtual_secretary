@@ -113,6 +113,15 @@ public class MemberService {
                 .collect(Collectors.toList());
     }
 
+    public void updatePeerId(String employeeCode, String meetingCode, String peerId) {
+        Member member = memberRepository.findByUser_EmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));;
+        if (member != null) {
+            member.setPeerId(peerId);
+            memberRepository.save(member);
+        }
+    }
+
 
 
 

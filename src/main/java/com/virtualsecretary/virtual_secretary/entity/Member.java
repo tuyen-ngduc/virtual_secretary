@@ -27,4 +27,6 @@ public class Member {
 
     @Column(nullable = false)
     boolean active;
+
+    String peerId;
 }

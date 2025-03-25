@@ -19,6 +19,4 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     List<Member> findByUserId(long userId);
 
     Optional<Member> findByUser_EmployeeCodeAndMeeting_MeetingCode(String userEmployeeCode, String meetingMeetingCode);
-
-
 }

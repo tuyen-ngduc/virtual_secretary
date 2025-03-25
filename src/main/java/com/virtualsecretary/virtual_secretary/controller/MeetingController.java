@@ -6,6 +6,7 @@ import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.entity.Member;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.payload.Signal;
+import com.virtualsecretary.virtual_secretary.repository.MemberRepository;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class MeetingController {
     MeetingService meetingService;
     SimpMessagingTemplate messagingTemplate;
     MemberService memberService;
+    MemberRepository memberRepository;
 
 
     @GetMapping
@@ -61,16 +63,16 @@ public class MeetingController {
 
 
     @MessageMapping("/join")
-    public void joinRoom(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+    public void joinRoom(@Payload Signal request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
         try {
 
             String employeeCode = principal.getName();
             log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
             UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
-            String socketId = headerAccessor.getSessionId();
+            String peerId = request.getPeerId();
+
 
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
-            headerAccessor.getSessionAttributes().put("socketId", socketId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
             log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
 
@@ -78,15 +80,15 @@ public class MeetingController {
 
             Map<String, Object> userJoinedMessage = new HashMap<>();
             userJoinedMessage.put("member", member);
-            userJoinedMessage.put("socketId", socketId);
+            userJoinedMessage.put("peerId", peerId);
             messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
-            log.info("Signed for everyone in the meeting");
+            log.info("Gửi cho tất cả mọi người!");
 
             JoinResponse joinResponse = new JoinResponse();
             joinResponse.setMeetingCode(request.getMeetingCode());
-            joinResponse.setIsTurnOnCamera(request.getIsTurnOnCamera());
+            joinResponse.setPeerId(peerId);
             messagingTemplate.convertAndSendToUser(employeeCode, "/queue/join", joinResponse);
-            log.info("User {} joined meeting {}", member.getEmployeeCode(), request.getMeetingCode());
+            log.info("User {} joined meeting {} with PeerId {}", member.getEmployeeCode(), request.getMeetingCode(), peerId);
         } catch (Exception e) {
             log.error("Error during join room process", e);
             messagingTemplate.convertAndSendToUser(
@@ -110,6 +112,7 @@ public class MeetingController {
 
             try {
                 memberService.deactivateMemberByEmployeeCode(employeeCode, meetingCode);
+                memberService.updatePeerId(employeeCode, meetingCode, null);
 
                 if (meetingCode != null) {
                     messagingTemplate.convertAndSend("/topic/meeting/" + meetingCode,
@@ -124,48 +127,22 @@ public class MeetingController {
         }
     }
 
-    @MessageMapping("/offer-call")
-    public void signaling(@Payload Signal signal, Principal principal) {
-        String meetingCode = signal.getMeetingCode();
-        Map<String, Object> offer =  signal.getOffer();
-        UserJoinMeetingResponse member = memberService.getUserJoinInfo(principal.getName(), meetingCode);
-        Map<String, Object> offerMessage = new HashMap<>();
+    @MessageMapping("/signal")
+    public void handleWebRTCSignal(@Payload Signal message, Principal principal) {
+        if (message.getReceiverId() == null || message.getSenderId() == null || message.getMeetingCode() == null) {
+            log.error("Missing meetingCode, senderId, or receiverId");
+            return;
+        }
 
-        offerMessage.put("offer", offer);
-        offerMessage.put("member", member);
-        offerMessage.put("Camere", signal.isC());
-        offerMessage.put("Screen", signal.isS());
-        offerMessage.put("Mic", signal.isM());
+        log.info("Forwarding {} signal in meeting {} from {} to {}",
+                message.getType(), message.getMeetingCode(), message.getSenderId(), message.getReceiverId());
 
-        List<Member> otherMembers = memberService.getAllMembersExcept(principal.getName(), meetingCode);
-        for (Member otherMember : otherMembers) {
+        // Chỉ gửi nếu receiverId khác senderId
+        if (!message.getReceiverId().equals(message.getSenderId())) {
             messagingTemplate.convertAndSendToUser(
-                    otherMember.getUser().getEmployeeCode(),
-                    "/queue/offer",
-                    offerMessage
+                    message.getReceiverId(), "/queue/signal", message
             );
         }
-//        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/offers", offerMessage);
-
-
-    }
-
-    @MessageMapping("/answer-call")
-    public void signalingAnswer(@Payload Signal signal, Principal principal) {
-        String meetingCode = signal.getMeetingCode();
-        Map<String, Object> answer = signal.getOffer();
-        String targetUser = signal.getTo();
-
-        UserJoinMeetingResponse member = memberService.getUserJoinInfo(principal.getName(), meetingCode);
-
-        Map<String, Object> answerMessage = new HashMap<>();
-        answerMessage.put("answer", answer);
-        answerMessage.put("member", member);
-        answerMessage.put("Camere", signal.isC());
-        answerMessage.put("Screen", signal.isS());
-        answerMessage.put("Mic", signal.isM());
-
-        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/answers/" + targetUser, answerMessage);
     }
 
 
