@@ -12,6 +12,11 @@ import java.util.stream.Collectors;
 @Component
 public class MeetingParticipantManager {
     private final Map<String, List<Signal>> participants = new ConcurrentHashMap<>();
+    // Map lưu trữ sessionId -> peerId để xử lý ngắt kết nối
+    private final Map<String, String> sessionPeerMap = new ConcurrentHashMap<>();
+
+    // Map lưu trữ peerId -> roomId để xử lý ngắt kết nối
+    private final Map<String, String> peerRoomMap = new ConcurrentHashMap<>();
 
     public void addParticipant(String meetingCode, Signal member) {
         participants.computeIfAbsent(meetingCode, k -> new ArrayList<>()).add(member);
@@ -30,4 +35,7 @@ public class MeetingParticipantManager {
                 .filter(m -> !m.getFrom().equals(excludePeerId))
                 .collect(Collectors.toList());
     }
+
+
+
 }

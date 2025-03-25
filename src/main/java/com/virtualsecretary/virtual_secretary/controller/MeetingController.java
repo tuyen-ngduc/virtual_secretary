@@ -14,8 +14,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -156,6 +158,12 @@ public class MeetingController {
         log.info("Sending participant list to {}: {}", peerId, participants);
 
     }
+
+    @MessageMapping("/signal/{meetingCode}")
+    public void signal(@DestinationVariable String meetingCode, @Payload Signal signal) {
+        messagingTemplate.convertAndSend("/topic/room/" + meetingCode, signal);
+    }
+
 
 
 
