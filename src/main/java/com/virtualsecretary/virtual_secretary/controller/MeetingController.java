@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -62,33 +63,73 @@ public class MeetingController {
     }
 
 
-    @MessageMapping("/join")
-    public void joinRoom(@Payload Signal request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
-        try {
+//    @MessageMapping("/join")
+//    public void joinRoom(@Payload Signal request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+//        try {
+//
+//            String employeeCode = principal.getName();
+//            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
+//            UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
+//            String peerId = request.getPeerId();
+//
+//            Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
+//            headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
+//            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
+//
+//            memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
+//
+//            Map<String, Object> userJoinedMessage = new HashMap<>();
+//            userJoinedMessage.put("member", member);
+//            userJoinedMessage.put("peerId", peerId);
+//            userJoinedMessage.put("type", )
+//
+//            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
+//            log.info("Gửi cho tất cả mọi người!");
+//
+//            JoinResponse joinResponse = new JoinResponse();
+//            joinResponse.setMeetingCode(request.getMeetingCode());
+//            joinResponse.setPeerId(peerId);
+//            messagingTemplate.convertAndSendToUser(employeeCode, "/queue/join", joinResponse);
+//            log.info("User {} joined meeting {} with PeerId {}", member.getEmployeeCode(), request.getMeetingCode(), peerId);
+//        } catch (Exception e) {
+//            log.error("Error during join room process", e);
+//            messagingTemplate.convertAndSendToUser(
+//                    principal.getName(),
+//                    "/queue/errors",
+//                    Map.of("message", "Error joining meeting: " + e.getMessage())
+//            );
+//        }
+//    }
 
+    @MessageMapping("/join")
+    public void joinRoom(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+        try {
             String employeeCode = principal.getName();
             log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
-            UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
-            String peerId = request.getPeerId();
 
+            UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
+            String socketId = headerAccessor.getSessionId();
+            String peerId = UUID.randomUUID().toString();
 
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
+            headerAccessor.getSessionAttributes().put("socketId", socketId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
-            log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
 
             memberService.validateAndActivateMember(employeeCode, request.getMeetingCode());
 
-            Map<String, Object> userJoinedMessage = new HashMap<>();
-            userJoinedMessage.put("member", member);
-            userJoinedMessage.put("peerId", peerId);
-            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), userJoinedMessage);
-            log.info("Gửi cho tất cả mọi người!");
+            Signal signal = Signal.builder()
+                    .type("user-joined")
+                    .from(peerId)
+                    .to("all")
+                    .member(member)
+                    .payload(Map.of("member", member, "peerId", peerId))
+                    .build();
 
-            JoinResponse joinResponse = new JoinResponse();
-            joinResponse.setMeetingCode(request.getMeetingCode());
-            joinResponse.setPeerId(peerId);
-            messagingTemplate.convertAndSendToUser(employeeCode, "/queue/join", joinResponse);
+            // Gửi thông báo đến tất cả người trong cuộc họp
+            messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), signal);
+
             log.info("User {} joined meeting {} with PeerId {}", member.getEmployeeCode(), request.getMeetingCode(), peerId);
+
         } catch (Exception e) {
             log.error("Error during join room process", e);
             messagingTemplate.convertAndSendToUser(
@@ -98,6 +139,7 @@ public class MeetingController {
             );
         }
     }
+
 
 
 
@@ -127,23 +169,23 @@ public class MeetingController {
         }
     }
 
-    @MessageMapping("/signal")
-    public void handleWebRTCSignal(@Payload Signal message, Principal principal) {
-        if (message.getReceiverId() == null || message.getSenderId() == null || message.getMeetingCode() == null) {
-            log.error("Missing meetingCode, senderId, or receiverId");
-            return;
-        }
-
-        log.info("Forwarding {} signal in meeting {} from {} to {}",
-                message.getType(), message.getMeetingCode(), message.getSenderId(), message.getReceiverId());
-
-        // Chỉ gửi nếu receiverId khác senderId
-        if (!message.getReceiverId().equals(message.getSenderId())) {
-            messagingTemplate.convertAndSendToUser(
-                    message.getReceiverId(), "/queue/signal", message
-            );
-        }
-    }
+//    @MessageMapping("/signal")
+//    public void handleWebRTCSignal(@Payload Signal message, Principal principal) {
+//        if (message.getReceiverId() == null || message.getSenderId() == null || message.getMeetingCode() == null) {
+//            log.error("Missing meetingCode, senderId, or receiverId");
+//            return;
+//        }
+//
+//        log.info("Forwarding {} signal in meeting {} from {} to {}",
+//                message.getType(), message.getMeetingCode(), message.getSenderId(), message.getReceiverId());
+//
+//        // Chỉ gửi nếu receiverId khác senderId
+//        if (!message.getReceiverId().equals(message.getSenderId())) {
+//            messagingTemplate.convertAndSendToUser(
+//                    message.getReceiverId(), "/queue/signal", message
+//            );
+//        }
+//    }
 
 
 
