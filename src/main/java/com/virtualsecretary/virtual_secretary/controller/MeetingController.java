@@ -109,7 +109,7 @@ public class MeetingController {
 
             UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
             String socketId = headerAccessor.getSessionId();
-            String peerId = UUID.randomUUID().toString();
+            String peerId = request.getPeerId();
 
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
             headerAccessor.getSessionAttributes().put("socketId", socketId);

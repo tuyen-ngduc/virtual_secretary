@@ -10,5 +10,5 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JoinRequest {
     private String meetingCode;
-    private Boolean isTurnOnCamera;
+    private String peerId;
 }
