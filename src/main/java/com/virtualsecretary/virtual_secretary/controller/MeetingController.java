@@ -14,13 +14,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
@@ -63,10 +64,8 @@ public class MeetingController {
     }
 
 
-
-
     @MessageMapping("/join")
-    public void joinRoom(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
+    public void joinMeeting(@Payload JoinRequest request, Principal principal, SimpMessageHeaderAccessor headerAccessor) {
         try {
             String employeeCode = principal.getName();
             log.info("Joining member {} with meeting code {}", employeeCode, request.getMeetingCode());
@@ -91,7 +90,6 @@ public class MeetingController {
                     .build();
             participantManager.addParticipant(request.getMeetingCode(), signal);
 
-            // Gửi thông báo đến tất cả người trong cuộc họp
             messagingTemplate.convertAndSend("/topic/room/" + request.getMeetingCode(), signal);
 
             log.info("User {} joined meeting {} with PeerId {}", member.getEmployeeCode(), request.getMeetingCode(), peerId);
@@ -105,8 +103,6 @@ public class MeetingController {
             );
         }
     }
-
-
 
 
     @EventListener
@@ -154,7 +150,7 @@ public class MeetingController {
                 .member(member)
                 .payload(Map.of("members", participants))
                 .build();
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room/" + meetingCode,signal);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room/" + meetingCode, signal);
         log.info("Sending participant list to {}: {}", peerId, participants);
 
     }
@@ -164,8 +160,17 @@ public class MeetingController {
         messagingTemplate.convertAndSend("/topic/room/" + meetingCode, signal);
     }
 
+    @PostMapping("/{meetingCode}/upload-audio")
+    public ApiResponse<String> uploadAudio(
+            @PathVariable String meetingCode,
+            @RequestParam("file") MultipartFile file) {
 
-
+        return ApiResponse.<String>builder()
+                .code(200)
+                .message("File saved")
+                .result(meetingService.saveAudio(meetingCode, file))
+                .build();
+    }
 
 
 }

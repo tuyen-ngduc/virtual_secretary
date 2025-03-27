@@ -16,6 +16,4 @@ public class Signal {
     String to;
     UserJoinMeetingResponse member;
     Object payload;
-
-
 }
