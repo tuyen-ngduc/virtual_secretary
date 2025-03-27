@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,22 +35,42 @@ public class MemberService {
     MeetingRepository meetingRepository;
     MemberMapper memberMapper;
 
-    @PreAuthorize("hasRole('ROLE_SECRETARY')")
+    @PreAuthorize("hasRole('SECRETARY')")
     public MemberResponse addMemberToMeeting(AddMemberRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
 
         Meeting meeting = meetingRepository.findById(request.getMeetingId())
-                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_EXISTED));
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
+        List<Meeting> existingMeetings = meetingRepository.findMeetingsByUserId(request.getUserId());
 
+        boolean isOverlapping = existingMeetings.stream().anyMatch(existingMeeting ->
+                isTimeOverlapping(meeting.getStartTime(), meeting.getEndTime(),
+                        existingMeeting.getStartTime(), existingMeeting.getEndTime()));
 
         Member member = new Member();
         member.setUser(user);
         member.setMeeting(meeting);
         member.setMeetingRole(request.getMeetingRole());
         memberRepository.save(member);
-        return memberMapper.toMemberResponse(member);
+
+
+        MemberResponse response = memberMapper.toMemberResponse(member);
+
+
+        if (isOverlapping) {
+            response.setWarning("⚠️ Cảnh báo: Nhân viên " +user.getName() + " đã có cuộc họp khác trong khoảng thời gian này!");
+        }
+
+        return response;
+    }
+
+    private boolean isTimeOverlapping(LocalDateTime newStart, LocalDateTime newEnd,
+                                      LocalDateTime existingStart, LocalDateTime existingEnd) {
+        return (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart));
+
+
     }
 
     public List<MemberResponse> getMembersByMeetingId(Long meetingId) {
@@ -105,13 +126,6 @@ public class MemberService {
         );
     }
 
-    public List<Member> getAllMembersExcept(String employeeCode, String meetingCode) {
-
-        List<Member> allMembers = memberRepository.findActiveMembers(meetingCode);
-        return allMembers.stream()
-                .filter(member -> !member.getUser().getEmployeeCode().equals(employeeCode))
-                .collect(Collectors.toList());
-    }
 
     public void updatePeerId(String employeeCode, String meetingCode, String peerId) {
         Member member = memberRepository.findByUser_EmployeeCodeAndMeeting_MeetingCode(employeeCode, meetingCode)

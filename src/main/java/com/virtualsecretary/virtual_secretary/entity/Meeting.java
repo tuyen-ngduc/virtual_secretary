@@ -32,15 +32,27 @@ public class Meeting {
     LocalDateTime startTime;
 
     @Column(nullable = false)
-    int duration;
+    LocalDateTime endTime;
 
-    @Enumerated(EnumType.STRING)
-    MeetingStatus status;
 
-    public LocalDateTime getEndTime() {
-        return startTime.plusMinutes(duration);
 
+    public MeetingStatus getMeetingStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        if (startTime.isAfter(now)) {
+            if (now.isBefore(startTime.minusHours(2))) {
+                return MeetingStatus.NOT_STARTED;
+            }
+            return MeetingStatus.UPCOMING;
+        } else if (now.isAfter(endTime)) {
+            return MeetingStatus.ENDED;
+        } else if (startTime.isBefore(now) && now.isBefore(endTime)) {
+            return MeetingStatus.ONGOING;
+        }
+
+        return MeetingStatus.UNKNOWN;
     }
+
+
 
 
 }

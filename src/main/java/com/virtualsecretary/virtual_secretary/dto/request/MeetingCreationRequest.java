@@ -31,6 +31,8 @@ public class MeetingCreationRequest {
 
     @NotNull(message = "Start time cannot be null")
     LocalDateTime startTime;
+    @NotNull(message = "Start time cannot be null")
+    LocalDateTime endTime;
 
 
 }

@@ -15,5 +15,6 @@ public class MemberResponse {
     MeetingCreationResponse meeting;
     MeetingRole meetingRole;
     String active;
+    String warning;
 
 }

@@ -1,6 +1,7 @@
 package com.virtualsecretary.virtual_secretary.dto.response;
 
 import com.virtualsecretary.virtual_secretary.entity.Department;
+import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.entity.Room;
 import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import jakarta.persistence.*;
@@ -22,4 +23,6 @@ public class MeetingCreationResponse {
     LocalDateTime startTime;
     LocalDateTime endTime;
     MeetingStatus status;
+
+
 }

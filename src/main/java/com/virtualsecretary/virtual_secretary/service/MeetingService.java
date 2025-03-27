@@ -32,8 +32,6 @@ public class MeetingService {
     MemberRepository memberRepository;
     DepartmentRepository departmentRepository;
     MeetingMapper meetingMapper;
-    MemberMapper memberMapper;
-    UserRepository userRepository;
 
     @PreAuthorize("hasRole('SECRETARY')")
     public MeetingCreationResponse createMeeting(MeetingCreationRequest request) {
@@ -49,30 +47,10 @@ public class MeetingService {
 
         Meeting meeting = meetingMapper.toMeeting(request);
         meeting.setRoom(room);
-        meeting.setStatus(getMeetingStatus(meeting));
         meeting.setDepartment(department);
 
         meetingRepository.save(meeting);
         return meetingMapper.toMeetingCreationResponse(meeting);
-    }
-
-    @Scheduled(initialDelay = 60000, fixedDelay = 60000)
-    private MeetingStatus getMeetingStatus(Meeting meeting) {
-        var now = LocalDateTime.now();
-        var startTime = meeting.getStartTime();
-        var endTime = startTime.plusHours(4);
-        if (startTime.isAfter(now)) {
-            if (now.isBefore(startTime.minusHours(2))) {
-                return MeetingStatus.NOT_STARTED;
-            }
-            return MeetingStatus.UPCOMING;
-        } else if (now.isAfter(endTime)) {
-            return MeetingStatus.ENDED;
-        } else if (startTime.isBefore(now) && now.isBefore(endTime)) {
-            return MeetingStatus.ONGOING;
-        }
-
-        return MeetingStatus.UNKNOWN;
     }
 
     public List<MeetingCreationResponse> getAllMeetings() {
@@ -88,8 +66,5 @@ public class MeetingService {
                 .map(meetingMapper::toMeetingCreationResponse)
                 .collect(Collectors.toList());
     }
-
-
-
 
 }
