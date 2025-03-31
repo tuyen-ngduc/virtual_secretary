@@ -19,11 +19,11 @@ import java.util.List;
 public class RoomService {
     MeetingRepository meetingRepository;
     RoomRepository roomRepository;
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     public List<Room> getAllRooms() {
         return roomRepository.findAll();
     }
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     public Room getRoomById(long id) {
         return roomRepository.findById(id)
                 .orElseThrow(() -> new IndicateException((ErrorCode.ROOM_NOT_EXISTED)));
