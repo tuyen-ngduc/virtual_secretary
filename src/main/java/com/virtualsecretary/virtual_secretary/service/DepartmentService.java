@@ -24,12 +24,14 @@ public class DepartmentService {
     UserRepository userRepository;
     MeetingRepository meetingRepository;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
+
     public List<Department> getAllDepartments() {
         return departmentRepository.findAll();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
+
     public Department getDepartmentById(long id) {
         return departmentRepository.findById(id)
                 .orElseThrow(() -> new IndicateException(ErrorCode.DEPARTMENT_NOT_EXISTED));
