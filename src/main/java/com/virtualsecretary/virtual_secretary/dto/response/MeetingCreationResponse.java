@@ -24,5 +24,4 @@ public class MeetingCreationResponse {
     LocalDateTime endTime;
     MeetingStatus status;
 
-
 }

@@ -150,14 +150,14 @@ public class MeetingController {
                 .member(member)
                 .payload(Map.of("members", participants))
                 .build();
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room/" + meetingCode, signal);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/room/" + meetingCode + "/users", signal);
         log.info("Sending participant list to {}: {}", peerId, participants);
 
     }
 
     @MessageMapping("/signal/{meetingCode}")
     public void signal(@DestinationVariable String meetingCode, @Payload Signal signal) {
-        messagingTemplate.convertAndSend("/topic/room/" + meetingCode, signal);
+        messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/signal", signal);
     }
 
     @PostMapping("/{meetingCode}/upload-audio")

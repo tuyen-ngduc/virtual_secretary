@@ -77,7 +77,7 @@ public class MeetingService {
             throw new RuntimeException("Error creating meeting directories", e);
         }
     }
-
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     public List<MeetingCreationResponse> getAllMeetings() {
         return meetingRepository.findAll().stream().map(meetingMapper::toMeetingCreationResponse).toList();
     }
@@ -85,7 +85,6 @@ public class MeetingService {
     public List<MeetingCreationResponse> getMyMeetings(long userId) {
 
         List<Member> members = memberRepository.findByUserId(userId);
-
         return members.stream()
                 .map(Member::getMeeting)
                 .map(meetingMapper::toMeetingCreationResponse)
