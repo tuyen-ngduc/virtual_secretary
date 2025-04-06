@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Data
@@ -33,6 +34,8 @@ public class Meeting {
 
     @Column(nullable = false)
     LocalDateTime endTime;
+    @OneToMany(mappedBy = "meeting", cascade = CascadeType.REMOVE)
+    List<Member> members;
 
 
 

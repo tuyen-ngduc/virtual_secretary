@@ -1,6 +1,7 @@
 package com.virtualsecretary.virtual_secretary.controller;
 
 import com.virtualsecretary.virtual_secretary.dto.request.AddMemberRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.RemoveMemberRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
 import com.virtualsecretary.virtual_secretary.dto.response.MemberResponse;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
@@ -29,6 +30,7 @@ public class MemberController {
                 .result(memberService.addMemberToMeeting(request))
                 .build();
     }
+
     @GetMapping("/{meetingId}")
     public ApiResponse<List<MemberResponse>> getAllMembers(@PathVariable Long meetingId) {
         return ApiResponse.<List<MemberResponse>>builder()
@@ -36,6 +38,22 @@ public class MemberController {
                 .result(memberService.getMembersByMeetingId(meetingId)).build();
     }
 
+    @DeleteMapping("/remove")
+    public ApiResponse<Void> removeMember(@RequestBody @Valid RemoveMemberRequest request) {
+        memberService.removeMemberFromMeeting(request);
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("Xóa thành viên khỏi cuộc họp thành công")
+                .build();
 
-
+    }
+    @PutMapping("/update")
+    public ApiResponse<MemberResponse> updateMeetingRole(@RequestBody @Valid AddMemberRequest request) {
+        MemberResponse updatedMember = memberService.updateMeetingRole(request);
+        return ApiResponse.<MemberResponse>builder()
+                .code(200)
+                .message("Cập nhật meetingRole thành công")
+                .result(updatedMember)
+                .build();
+    }
 }

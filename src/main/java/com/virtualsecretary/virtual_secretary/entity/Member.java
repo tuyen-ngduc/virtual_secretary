@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,9 +26,8 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     MeetingRole meetingRole;
-
     @Column(nullable = false)
     boolean active;
-
     String peerId;
+
 }

@@ -2,6 +2,7 @@ package com.virtualsecretary.virtual_secretary.controller;
 
 import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.UpdateMeetingRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.payload.Signal;
@@ -170,6 +171,24 @@ public class MeetingController {
                 .message("File saved")
                 .result(meetingService.saveAudio(meetingCode, file))
                 .build();
+    }
+
+    @PutMapping("/update")
+    public ApiResponse<UpdateMeetingResponse> updateMeeting(@RequestBody @Valid UpdateMeetingRequest request) {
+        UpdateMeetingResponse response = meetingService.updateMeeting(request);
+        return ApiResponse.<UpdateMeetingResponse>builder()
+                .code(200)
+                .message("Cập nhật cuộc họp thành công")
+                .result(response)
+                .build();
+    }
+
+    @DeleteMapping("/{meetingId}")
+    public ApiResponse<Void> deleteMeeting(@PathVariable long meetingId) {
+        meetingService.deleteMeeting(meetingId);
+
+        return ApiResponse.<Void>builder()
+                .code(200).message("Xóa cuộc họp thành công").build();
     }
 
 

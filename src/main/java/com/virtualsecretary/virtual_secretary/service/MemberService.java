@@ -1,6 +1,7 @@
 package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.AddMemberRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.RemoveMemberRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.MemberResponse;
 import com.virtualsecretary.virtual_secretary.dto.response.UserJoinMeetingResponse;
 import com.virtualsecretary.virtual_secretary.entity.Meeting;
@@ -136,6 +137,23 @@ public class MemberService {
         }
     }
 
+    public void removeMemberFromMeeting(RemoveMemberRequest request) {
+        Member member = memberRepository.findByUser_IdAndMeeting_Id(request.getUserId(), request.getMeetingId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
+        memberRepository.delete(member);
+    }
+
+    public MemberResponse updateMeetingRole(AddMemberRequest request) {
+        Member member = memberRepository.findByUser_IdAndMeeting_Id(request.getUserId(), request.getMeetingId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
+
+        member.setMeetingRole(request.getMeetingRole());
+        Member updated = memberRepository.save(member);
+
+        return memberMapper.toMemberResponse(updated);
+
+
+    }
 
 }

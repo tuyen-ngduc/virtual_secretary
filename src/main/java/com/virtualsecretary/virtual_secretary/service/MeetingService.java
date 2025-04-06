@@ -1,7 +1,9 @@
 package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.UpdateMeetingRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.MeetingCreationResponse;
+import com.virtualsecretary.virtual_secretary.dto.response.UpdateMeetingResponse;
 import com.virtualsecretary.virtual_secretary.dto.response.UserJoinMeetingResponse;
 import com.virtualsecretary.virtual_secretary.entity.*;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
@@ -42,7 +44,6 @@ public class MeetingService {
 
     @PreAuthorize("hasRole('SECRETARY')")
     public MeetingCreationResponse createMeeting(MeetingCreationRequest request) {
-        log.info("Starting to create meeting with request: {}", request);
 
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new IndicateException(ErrorCode.ROOM_NOT_EXISTED));
@@ -61,6 +62,29 @@ public class MeetingService {
         createMeetingDirectories(request.getMeetingCode());
 
         return meetingMapper.toMeetingCreationResponse(meeting);
+    }
+
+    public UpdateMeetingResponse updateMeeting(UpdateMeetingRequest request) {
+        Meeting meeting = meetingRepository.findById(request.getId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
+
+        Room room = roomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.ROOM_NOT_EXISTED));
+
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.DEPARTMENT_NOT_EXISTED));
+
+
+        meeting.setMeetingCode(request.getMeetingCode());
+        meeting.setRoom(room);
+        meeting.setDepartment(department);
+        meeting.setName(request.getName());
+        meeting.setStartTime(request.getStartTime());
+        meeting.setEndTime(request.getEndTime());
+
+        meetingRepository.save(meeting);
+
+        return meetingMapper.toUpdateMeetingResponse(meeting);
     }
 
     private void createMeetingDirectories(String meetingCode) {
@@ -112,6 +136,13 @@ public class MeetingService {
         }
 
         return filePath.toString();
+    }
+
+    public void deleteMeeting(long meetingId) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
+
+        meetingRepository.delete(meeting);
     }
 
 
