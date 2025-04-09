@@ -19,4 +19,6 @@ public class AddMemberRequest {
         @NotNull(message = "Meeting role must not be null")
         MeetingRole meetingRole;
 
+        boolean forceAdd = false;
+
 }

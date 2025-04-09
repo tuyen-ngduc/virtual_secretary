@@ -31,15 +31,17 @@ public class UserController {
                 .build();
     }
     @GetMapping
-    ApiResponse<List<UserResponse>> getAllUsers() {
+    ApiResponse<List<UserResponse>> getAllUsers(@RequestParam(required = false) String search) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         log.info("Username: {}", authentication.getName());
         authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
+
         return ApiResponse.<List<UserResponse>>builder()
                 .code(200)
-                .result(userService.getAllUsers())
+                .result(userService.getAllUsers(search))
                 .build();
     }
+
 
     @PutMapping("/{userId}")
     ApiResponse<UserResponse> updateUser(@PathVariable long userId, @RequestBody @Valid UserUpdateRequest request) {

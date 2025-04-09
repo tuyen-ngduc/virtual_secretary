@@ -56,9 +56,20 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
     @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
+    public List<UserResponse> getAllUsers(String search) {
+        List<User> users;
+
+        if (search != null && !search.trim().isEmpty()) {
+            users = userRepository.findByNameContainingIgnoreCaseOrEmployeeCodeContainingIgnoreCase(search, search);
+        } else {
+            users = userRepository.findAll();
+        }
+
+        return users.stream()
+                .map(userMapper::toUserResponse)
+                .toList();
     }
+
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(long userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));

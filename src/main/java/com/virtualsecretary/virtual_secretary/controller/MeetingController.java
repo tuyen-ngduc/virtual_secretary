@@ -191,5 +191,20 @@ public class MeetingController {
                 .code(200).message("Xóa cuộc họp thành công").build();
     }
 
+    @GetMapping("/schedule/by-week")
+    public WeeklyMeetingResponse getMeetingsByWeek() {
+        return meetingService.getMeetingsByWeek();
+    }
+
+    @GetMapping("/schedule/by-month")
+    public MonthlyMeetingResponse getMeetingsByMonth(
+            @RequestParam int month,
+            @RequestParam int year
+    ) {
+        return meetingService.getMeetingsByMonth(month, year);
+    }
+
+
+
 
 }

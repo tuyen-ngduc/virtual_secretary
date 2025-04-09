@@ -30,6 +30,7 @@ public enum ErrorCode {
     MEETING_NOT_EXISTED(1019, "Meeting not existed", HttpStatus.NOT_FOUND),
     MEMBER_EXISTED(1020, "Member existed", HttpStatus.NOT_FOUND),
     MEMBER_NOT_EXISTED (1021, "Member not existed", HttpStatus.NOT_FOUND),
+    MEETING_TIME_CONFLICT(1022,"MEETING_TIME_CONFLICT", HttpStatus.CONFLICT ),
 
     ;
 

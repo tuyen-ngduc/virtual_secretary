@@ -2,9 +2,7 @@ package com.virtualsecretary.virtual_secretary.service;
 
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UpdateMeetingRequest;
-import com.virtualsecretary.virtual_secretary.dto.response.MeetingCreationResponse;
-import com.virtualsecretary.virtual_secretary.dto.response.UpdateMeetingResponse;
-import com.virtualsecretary.virtual_secretary.dto.response.UserJoinMeetingResponse;
+import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.entity.*;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
@@ -26,9 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.*;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -144,6 +144,82 @@ public class MeetingService {
 
         meetingRepository.delete(meeting);
     }
+
+    public WeeklyMeetingResponse getMeetingsByWeek() {
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime startOfWeek = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).with(LocalTime.MIN);
+        LocalDateTime endOfWeek = now.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).with(LocalTime.MAX);
+
+        List<Meeting> meetings = meetingRepository.findByStartTimeBetween(startOfWeek, endOfWeek);
+
+        Map<String, List<MeetingCreationResponse>> result = new LinkedHashMap<>();
+
+
+        for (DayOfWeek day : DayOfWeek.values()) {
+            String dayName = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+            result.put(dayName, new ArrayList<>());
+        }
+
+        for (Meeting meeting : meetings) {
+            DayOfWeek dayOfWeek = meeting.getStartTime().getDayOfWeek(); // Ví dụ: MONDAY
+            String dayName = dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+            result.get(dayName).add(meetingMapper.toMeetingCreationResponse(meeting));
+        }
+
+        return new WeeklyMeetingResponse(result);
+    }
+
+    public MonthlyMeetingResponse getMeetingsByMonth(int month, int year) {
+        YearMonth selectedMonth = YearMonth.of(year, month);
+
+        // Tính ngày bắt đầu từ tuần chứa ngày 1 -> đến hết tuần chứa ngày cuối tháng
+        LocalDateTime from = selectedMonth.atDay(1)
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .atStartOfDay();
+
+        LocalDateTime to = selectedMonth.atEndOfMonth()
+                .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                .atTime(LocalTime.MAX);
+
+        List<Meeting> meetings = meetingRepository.findByStartTimeBetween(from, to);
+
+        // Chia theo tuần -> ngày
+        Map<String, Map<String, List<MeetingCreationResponse>>> result = new LinkedHashMap<>();
+
+        LocalDate start = from.toLocalDate();
+        LocalDate end = to.toLocalDate();
+
+        int weekIndex = 1;
+        for (LocalDate weekStart = start; !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            String weekLabel = "Week " + weekIndex++;
+
+            Map<String, List<MeetingCreationResponse>> daysInWeek = new LinkedHashMap<>();
+            for (DayOfWeek day : DayOfWeek.values()) {
+                String dayName = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+                daysInWeek.put(dayName, new ArrayList<>());
+            }
+
+            result.put(weekLabel, daysInWeek);
+        }
+
+        for (Meeting meeting : meetings) {
+            LocalDate meetingDate = meeting.getStartTime().toLocalDate();
+            int daysFromStart = (int) ChronoUnit.DAYS.between(start, meetingDate);
+            int weekNumber = (daysFromStart / 7) + 1;
+            String weekLabel = "Week " + weekNumber;
+
+            String dayName = meetingDate.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+
+            if (result.containsKey(weekLabel)) {
+                result.get(weekLabel).get(dayName)
+                        .add(meetingMapper.toMeetingCreationResponse(meeting));
+            }
+        }
+
+        return new MonthlyMeetingResponse(result);
+    }
+
 
 
 }

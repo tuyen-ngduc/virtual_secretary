@@ -49,6 +49,9 @@ public class MemberService {
         boolean isOverlapping = existingMeetings.stream().anyMatch(existingMeeting ->
                 isTimeOverlapping(meeting.getStartTime(), meeting.getEndTime(),
                         existingMeeting.getStartTime(), existingMeeting.getEndTime()));
+        if (isOverlapping && !request.isForceAdd()) {
+            throw new IndicateException(ErrorCode.MEETING_TIME_CONFLICT);
+        }
 
         Member member = new Member();
         member.setUser(user);
@@ -58,11 +61,6 @@ public class MemberService {
 
 
         MemberResponse response = memberMapper.toMemberResponse(member);
-
-
-        if (isOverlapping) {
-            response.setWarning("⚠️ Cảnh báo: Nhân viên " +user.getName() + " đã có cuộc họp khác trong khoảng thời gian này!");
-        }
 
         return response;
     }
