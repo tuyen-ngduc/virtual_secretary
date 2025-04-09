@@ -31,6 +31,7 @@ public enum ErrorCode {
     MEMBER_EXISTED(1020, "Member existed", HttpStatus.NOT_FOUND),
     MEMBER_NOT_EXISTED (1021, "Member not existed", HttpStatus.NOT_FOUND),
     MEETING_TIME_CONFLICT(1022,"MEETING_TIME_CONFLICT", HttpStatus.CONFLICT ),
+    EMPLOYEE_CODE_EXISTED(1023, "Employee code existed", HttpStatus.BAD_REQUEST),
 
     ;
 

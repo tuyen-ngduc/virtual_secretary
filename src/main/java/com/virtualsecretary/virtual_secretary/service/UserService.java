@@ -80,7 +80,7 @@ public class UserService {
             throw new IndicateException(ErrorCode.EMAIL_EXISTED);
         }
         if (userRepository.existsByEmployeeCodeAndIdNot(request.getEmployeeCode(), userId)) {
-            throw new IndicateException(ErrorCode.USER_EXISTED);
+            throw new IndicateException(ErrorCode.EMPLOYEE_CODE_EXISTED);
         }
 
         if (request.getRole() == null || (!request.getRole().equals(Role.ROLE_USER) && !request.getRole().equals(Role.ROLE_SECRETARY))) {

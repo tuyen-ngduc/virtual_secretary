@@ -18,7 +18,6 @@ public class AddMemberRequest {
         long meetingId;
         @NotNull(message = "Meeting role must not be null")
         MeetingRole meetingRole;
-
         boolean forceAdd = false;
 
 }
