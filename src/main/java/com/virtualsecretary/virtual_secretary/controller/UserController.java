@@ -1,5 +1,6 @@
 package com.virtualsecretary.virtual_secretary.controller;
 
+import com.virtualsecretary.virtual_secretary.dto.request.UpdateProfileRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UserCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UserUpdateRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
@@ -14,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/users")
@@ -30,6 +32,7 @@ public class UserController {
                 .result(userService.createUser(request))
                 .build();
     }
+
     @GetMapping
     ApiResponse<List<UserResponse>> getAllUsers(@RequestParam(required = false) String search) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -79,7 +82,16 @@ public class UserController {
                 .build();
     }
 
-
-
-
+    @PutMapping("/profile/my-info")
+    ApiResponse<UserResponse> updateProfile(@RequestBody @Valid UpdateProfileRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .code(200)
+                .message("Update profile successfully!")
+                .result(userService.updateProfile(request))
+                .build();
+    }
 }
+
+
+
+

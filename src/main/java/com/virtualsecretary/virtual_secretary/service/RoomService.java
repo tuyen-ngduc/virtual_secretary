@@ -5,6 +5,7 @@ import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import com.virtualsecretary.virtual_secretary.repository.RoomRepository;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -52,6 +53,7 @@ public class RoomService {
         return roomRepository.save(existingRoom);
     }
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public void deleteRoom(long id) {
         if (!roomRepository.existsById(id)) {
             throw new IndicateException(ErrorCode.ROOM_NOT_EXISTED);

@@ -4,8 +4,11 @@ import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
+import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
+import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Service
 public class FileExportService {
+    MeetingRepository meetingRepository;
 
     private String readTranscript(String meetingCode) {
         Path filePath = Paths.get("stt", meetingCode, "transcript.txt");
@@ -45,6 +49,12 @@ public class FileExportService {
 
 
     public void createDocx(String meetingCode) {
+        Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
+
+        if (meeting.getMeetingStatus() != MeetingStatus.ENDED) {
+            throw new IndicateException(ErrorCode.MEETING_NOT_ENDED_YET);
+        }
         String transcriptContent = readTranscript(meetingCode);
 
         try (XWPFDocument docx = new XWPFDocument()) {

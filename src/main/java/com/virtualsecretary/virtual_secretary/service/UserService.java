@@ -1,5 +1,6 @@
 package com.virtualsecretary.virtual_secretary.service;
 
+import com.virtualsecretary.virtual_secretary.dto.request.UpdateProfileRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UserCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UserUpdateRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.UserResponse;
@@ -11,6 +12,7 @@ import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.mapper.UserMapper;
 import com.virtualsecretary.virtual_secretary.repository.DepartmentRepository;
 import com.virtualsecretary.virtual_secretary.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,6 +34,7 @@ public class UserService {
     DepartmentRepository departmentRepository;
     PasswordEncoder passwordEncoder;
     UserMapper userMapper;
+
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request) {
         Department department = departmentRepository.findById(request.getDepartmentId())
@@ -55,6 +58,7 @@ public class UserService {
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     public List<UserResponse> getAllUsers(String search) {
         List<User> users;
@@ -95,6 +99,7 @@ public class UserService {
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
+
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(long userId) {
         userRepository.deleteById(userId);
@@ -112,4 +117,25 @@ public class UserService {
         User user = userRepository.findByEmployeeCode(name).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
         return userMapper.toUserResponse(user);
     }
+
+
+    public UserResponse updateProfile(UpdateProfileRequest request) {
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+        User user = userRepository.findByEmployeeCode(name).orElseThrow(() -> new IndicateException(ErrorCode.USER_NOT_EXISTED));
+
+        user.setName(request.getName());
+        user.setDob(request.getDob());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setIdentification(request.getIdentification());
+        user.setAddress(request.getAddress());
+        user.setBankName(request.getBankName());
+        user.setBankNumber(request.getBankNumber());
+        user.setEmail(request.getEmail());
+        user.setImg(request.getImg());
+
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
+    }
 }
+
