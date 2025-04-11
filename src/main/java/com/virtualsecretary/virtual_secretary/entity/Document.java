@@ -10,10 +10,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
+@Table(name = "document")
 public class Document {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    long id;
+    Long id;
     @ManyToOne
     @JoinColumn(name = "meeting_id", nullable = false)
     Meeting meeting;
