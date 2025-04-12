@@ -148,7 +148,6 @@ public class MemberService {
 
         member.setMeetingRole(request.getMeetingRole());
         Member updated = memberRepository.save(member);
-
         return memberMapper.toMemberResponse(updated);
 
 

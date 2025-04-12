@@ -17,7 +17,7 @@ import java.util.Set;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "user")
+@Table(name = "employee")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

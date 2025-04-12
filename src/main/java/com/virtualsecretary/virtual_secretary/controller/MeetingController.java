@@ -4,8 +4,11 @@ import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UpdateMeetingRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
+import com.virtualsecretary.virtual_secretary.entity.Member;
+import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.payload.Signal;
+import com.virtualsecretary.virtual_secretary.repository.MemberRepository;
 import com.virtualsecretary.virtual_secretary.service.MeetingParticipantManager;
 import com.virtualsecretary.virtual_secretary.service.MeetingService;
 import com.virtualsecretary.virtual_secretary.service.MemberService;
@@ -38,6 +41,7 @@ public class MeetingController {
     SimpMessagingTemplate messagingTemplate;
     MemberService memberService;
     MeetingParticipantManager participantManager;
+    MemberRepository memberRepository;
 
 
     @GetMapping
@@ -74,7 +78,6 @@ public class MeetingController {
             UserJoinMeetingResponse member = memberService.getUserJoinInfo(employeeCode, request.getMeetingCode());
             String sessionId = headerAccessor.getSessionId();
             String peerId = request.getPeerId();
-
             Objects.requireNonNull(headerAccessor.getSessionAttributes()).put("employeeCode", member.getEmployeeCode());
             headerAccessor.getSessionAttributes().put("sessionId", sessionId);
             headerAccessor.getSessionAttributes().put("meetingCode", request.getMeetingCode());
@@ -87,7 +90,7 @@ public class MeetingController {
                     .from(peerId)
                     .to("all")
                     .member(member)
-                    .payload(Map.of("member", member, "peerId", peerId))
+                    .payload(Map.of("member", member, "peerId", peerId) )
                     .build();
             participantManager.addParticipant(request.getMeetingCode(), signal);
 
@@ -161,17 +164,6 @@ public class MeetingController {
         messagingTemplate.convertAndSend("/topic/room/" + meetingCode + "/signal", signal);
     }
 
-    @PostMapping("/{meetingCode}/upload-audio")
-    public ApiResponse<String> uploadAudio(
-            @PathVariable String meetingCode,
-            @RequestParam("file") MultipartFile file) {
-
-        return ApiResponse.<String>builder()
-                .code(200)
-                .message("File saved")
-                .result(meetingService.saveAudio(meetingCode, file))
-                .build();
-    }
 
     @PutMapping("/update")
     public ApiResponse<UpdateMeetingResponse> updateMeeting(@RequestBody @Valid UpdateMeetingRequest request) {

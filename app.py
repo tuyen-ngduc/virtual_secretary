@@ -1,45 +1,32 @@
-import os
+from flask import Flask, request, jsonify
 import whisper
-from flask import Flask, request, jsonify, send_file
+import os
 
 app = Flask(__name__)
+model = whisper.load_model("base")  # Hoặc bạn có thể dùng "tiny", "small" nếu cần tốc độ nhanh hơn
 
-UPLOAD_FOLDER = './uploads'
-RESULT_FOLDER = './results'
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(RESULT_FOLDER, exist_ok=True)
-
-# Load Whisper model once
-model = whisper.load_model("small")
-
-@app.route('/transcribe', methods=['POST'])
+@app.route("/", methods=["POST"])
 def transcribe_audio():
-    if 'audio' not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
 
-    audio_file = request.files['audio']
-    filename = audio_file.filename
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
 
-    # Save file temporarily
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    audio_file.save(file_path)
+    # Lưu file tạm thời
+    temp_path = "temp_audio.ogg"
+    file.save(temp_path)
 
-    # Transcribe using whisper
-    result = model.transcribe(file_path, language="vi")
-    text = result['text']
+    try:
+        # Chạy model Whisper để chuyển đổi âm thanh thành văn bản
+        result = model.transcribe(temp_path)
+        os.remove(temp_path)  # Xóa file tạm thời sau khi xử lý
+        return jsonify({"text": result["text"]})
+    except Exception as e:
+        # Ghi lại lỗi chi tiết vào log
+        app.logger.error(f"Error processing file {file.filename}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
-    # Save text result
-    txt_filename = filename.rsplit('.', 1)[0] + ".txt"
-    txt_path = os.path.join(RESULT_FOLDER, txt_filename)
-    with open(txt_path, 'w', encoding='utf-8') as f:
-        f.write(text)
-
-    # Optional: remove file sau khi xử lý xong
-    os.remove(file_path)
-
-    # Trả về file text
-    return send_file(txt_path, as_attachment=True)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)  # Chạy Flask trên localhost:5000

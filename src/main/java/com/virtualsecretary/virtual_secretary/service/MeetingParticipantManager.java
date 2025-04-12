@@ -15,7 +15,6 @@ public class MeetingParticipantManager {
 
     private final Map<String, String> sessionPeerMap = new ConcurrentHashMap<>();
 
-
     private final Map<String, String> peerRoomMap = new ConcurrentHashMap<>();
 
     public void addParticipant(String meetingCode, Signal member) {

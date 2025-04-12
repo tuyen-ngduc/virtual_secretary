@@ -16,6 +16,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -41,6 +43,7 @@ public class MeetingService {
     MemberRepository memberRepository;
     DepartmentRepository departmentRepository;
     MeetingMapper meetingMapper;
+    UserRepository userRepository;
 
     @PreAuthorize("hasRole('SECRETARY')")
     public MeetingCreationResponse createMeeting(MeetingCreationRequest request) {
@@ -115,28 +118,9 @@ public class MeetingService {
                 .collect(Collectors.toList());
     }
 
-    public String saveAudio(String meetingCode, MultipartFile file) {
-        Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
-        Path audioDirectory = Paths.get("audio", meetingCode);
-        try {
-            Files.createDirectories(audioDirectory);
-        } catch (IOException e) {
-            throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
 
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path filePath = audioDirectory.resolve(fileName);
 
-        try {
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi lưu file audio", e);
-        }
-
-        return filePath.toString();
-    }
 
     public void deleteMeeting(long meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId)

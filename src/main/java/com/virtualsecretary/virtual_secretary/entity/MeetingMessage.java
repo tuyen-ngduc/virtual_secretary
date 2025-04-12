@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "meeting_record")
-public class MeetingRecord {
+@Table(name = "meeting_message")
+public class MeetingMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
@@ -21,11 +21,14 @@ public class MeetingRecord {
     @ManyToOne
     @JoinColumn(name = "meeting_id", nullable = false)
     Meeting meeting;
+    @ManyToOne
+    @JoinColumn(name = "member_id", nullable = false)
+    Member member;
+
     @Lob
     @Column(nullable = false)
-    String transcript;
-    @Column(nullable = false, unique = true)
-    String audioFileUrl;
+    String content;
+
     @Column(nullable = false)
     LocalDateTime createdTime;
 }
