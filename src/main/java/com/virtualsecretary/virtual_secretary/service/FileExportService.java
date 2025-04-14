@@ -47,7 +47,6 @@ public class FileExportService {
         }
     }
 
-
     public void createDocx(String meetingCode) {
         Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
@@ -55,12 +54,18 @@ public class FileExportService {
         if (meeting.getMeetingStatus() != MeetingStatus.ENDED) {
             throw new IndicateException(ErrorCode.MEETING_NOT_ENDED_YET);
         }
+
         String transcriptContent = readTranscript(meetingCode);
 
         try (XWPFDocument docx = new XWPFDocument()) {
             XWPFParagraph paragraph = docx.createParagraph();
             XWPFRun run = paragraph.createRun();
-            run.setText(transcriptContent);
+
+            String[] lines = transcriptContent.split("\\r?\\n");
+            for (String line : lines) {
+                run.setText(line);
+                run.addBreak();
+            }
 
             Path docxPath = Paths.get("stt", meetingCode, "transcript.docx");
             try (FileOutputStream out = new FileOutputStream(docxPath.toFile())) {
@@ -70,6 +75,7 @@ public class FileExportService {
             log.error("Error creating DOCX for meeting: {}", meetingCode, e);
         }
     }
+
 
 
     public void convertDocxToPdf(String meetingCode) {

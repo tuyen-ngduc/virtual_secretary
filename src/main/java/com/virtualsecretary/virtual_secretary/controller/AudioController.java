@@ -2,15 +2,13 @@ package com.virtualsecretary.virtual_secretary.controller;
 
 import com.virtualsecretary.virtual_secretary.dto.response.ApiResponse;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
+import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import com.virtualsecretary.virtual_secretary.service.AudioService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/audio")
@@ -18,6 +16,7 @@ import java.io.IOException;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AudioController {
     AudioService audioService;
+    MeetingRepository meetingRepository;
 
     @PostMapping("/{meetingCode}/upload")
     public ApiResponse<String> uploadAudio(
@@ -45,5 +44,14 @@ public class AudioController {
         }
     }
 
+    @GetMapping("/transcribe/{meetingCode}")
+    public ApiResponse<String> transcribeAudio(@PathVariable String meetingCode) {
 
+
+        return ApiResponse.<String>builder()
+                .code(200)
+                .message("Tạo biên bản thành công!")
+                .result(audioService.transcribeAudioFiles(meetingCode))
+                .build() ;
+    }
 }

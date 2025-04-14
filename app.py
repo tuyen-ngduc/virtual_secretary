@@ -3,30 +3,43 @@ import whisper
 import os
 
 app = Flask(__name__)
-model = whisper.load_model("base")  # Hoặc bạn có thể dùng "tiny", "small" nếu cần tốc độ nhanh hơn
 
-@app.route("/", methods=["POST"])
+# Tạo thư mục lưu file tạm nếu chưa tồn tại
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Tải model Whisper
+model = whisper.load_model("base")
+
+@app.route('/transcribe', methods=['POST'])
 def transcribe_audio():
+    # Kiểm tra nếu có tệp âm thanh trong request
     if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-
+        return jsonify({"error": "No file part"}), 400
+    
     file = request.files['file']
+    
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    # Lưu file tạm thời
-    temp_path = "temp_audio.ogg"
-    file.save(temp_path)
+    # Lưu tệp âm thanh vào thư mục tạm an toàn trên Windows
+    audio_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(audio_path)
 
     try:
-        # Chạy model Whisper để chuyển đổi âm thanh thành văn bản
-        result = model.transcribe(temp_path)
-        os.remove(temp_path)  # Xóa file tạm thời sau khi xử lý
-        return jsonify({"text": result["text"]})
+        # Chạy Whisper để chuyển đổi âm thanh thành văn bản
+        result = model.transcribe(audio_path)
+        transcript_text = result.get("text", "")
     except Exception as e:
-        # Ghi lại lỗi chi tiết vào log
-        app.logger.error(f"Error processing file {file.filename}: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Error during transcription: {str(e)}"}), 500
+    finally:
+        # Xóa tệp âm thanh sau khi xử lý
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
+    # Trả về văn bản đã được chuyển đổi
+    return jsonify({"transcript": transcript_text})
+
 
 if __name__ == "__main__":
-    app.run(debug=True)  # Chạy Flask trên localhost:5000
+    app.run(host='0.0.0.0', port=5000)

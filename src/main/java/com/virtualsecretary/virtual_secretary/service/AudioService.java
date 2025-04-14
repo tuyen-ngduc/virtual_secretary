@@ -1,5 +1,7 @@
 package com.virtualsecretary.virtual_secretary.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.entity.Member;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
@@ -10,8 +12,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,7 +25,9 @@ import java.io.*;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,7 +37,6 @@ public class AudioService {
 
     MeetingRepository meetingRepository;
     MemberRepository memberRepository;
-    RestTemplate restTemplate;
 
 
     public String saveAudio(String meetingCode, MultipartFile file) {
@@ -71,7 +78,92 @@ public class AudioService {
         return filePath.toString();
     }
 
+    public String transcribeAudioFiles(String meetingCode) {
+        meetingRepository.findByMeetingCode(meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
+        String audioDirectory = "audio/" + meetingCode;
+        String transcriptDirectory = "stt/" + meetingCode;
+        File audioDir = new File(audioDirectory);
+        File transcriptFile = new File(transcriptDirectory + "/transcript.txt");
+
+        if (!audioDir.exists() || !audioDir.isDirectory()) {
+            return "Audio directory does not exist!";
+        }
+
+        try {
+            File[] audioFiles = audioDir.listFiles((dir, name) ->
+                    name.endsWith(".mp3") || name.endsWith(".wav") || name.endsWith(".ogg"));
+            if (audioFiles == null || audioFiles.length == 0) {
+                return "No audio files found!";
+            }
+
+            Files.createDirectories(Paths.get(transcriptDirectory));
+            StringBuilder transcriptBuilder = new StringBuilder();
+
+            for (File audioFile : audioFiles) {
+                String audioFilePath = audioFile.getAbsolutePath();
+                String rawTranscriptJson = transcribeWithWhisper(audioFilePath);
+
+                String transcriptText = extractTranscriptFromJson(rawTranscriptJson);
+
+                String filename = audioFile.getName();
+                String[] parts = filename.split("_");
+
+                if (parts.length < 4) {
+                    continue; // Bỏ qua file có tên không đúng định dạng
+                }
+
+                String name = Arrays.stream(parts, 2, parts.length - 1)
+                        .collect(Collectors.joining(" "))
+                        .replaceAll("\\.\\w+$", "");
+                String roleWithExt = parts[parts.length - 1];
+                String role = roleWithExt.replaceAll("\\.\\w+$", "");
+
+                transcriptBuilder.append(name).append(" - ").append(role)
+                        .append(": ").append(transcriptText.trim())
+                        .append("\n\n");
+            }
+
+            Files.write(Paths.get(transcriptFile.getAbsolutePath()), transcriptBuilder.toString().getBytes());
+
+            return transcriptFile.getAbsolutePath();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error while transcribing audio files: " + e.getMessage();
+        }
+    }
+
+    private String extractTranscriptFromJson(String json) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            return root.path("transcript").asText("");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+
+    private String transcribeWithWhisper(String audioFilePath) {
+        RestTemplate restTemplate = new RestTemplate();
+        File audioFile = new File(audioFilePath);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new FileSystemResource(audioFile));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        String url = "http://localhost:5000/transcribe";
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+        return response.getBody();
+    }
 }
 
 
