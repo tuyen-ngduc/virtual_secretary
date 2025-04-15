@@ -2,9 +2,11 @@ package com.virtualsecretary.virtual_secretary.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.virtualsecretary.virtual_secretary.config.FlaskApiConfig;
 import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.entity.Member;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
+import com.virtualsecretary.virtual_secretary.enums.MeetingRole;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import com.virtualsecretary.virtual_secretary.repository.MemberRepository;
@@ -12,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +40,7 @@ public class AudioService {
 
     MeetingRepository meetingRepository;
     MemberRepository memberRepository;
+    FlaskApiConfig flaskApiConfig;
 
 
     public String saveAudio(String meetingCode, MultipartFile file) {
@@ -64,7 +68,7 @@ public class AudioService {
 
         // Format tên file: timestamp_tennguoi_vaitro.wav
         String formattedName = member.getUser().getName().replaceAll("\\s+", "_");
-        String role = member.getMeetingRole().name();
+        String role = getVietnameseRoleName(member.getMeetingRole());
         String fileName = String.format("%s_%s_%s%s", timestamp, formattedName, role, extension);
 
         Path filePath = audioDirectory.resolve(fileName);
@@ -158,12 +162,22 @@ public class AudioService {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-        String url = "http://localhost:5000/transcribe";
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        String flaskApiUrl = flaskApiConfig.getUrl();
+        ResponseEntity<String> response = restTemplate.exchange(flaskApiUrl, HttpMethod.POST, requestEntity, String.class);
 
         return response.getBody();
     }
+
+    private String getVietnameseRoleName(MeetingRole role) {
+        return switch (role) {
+            case PRESIDENT -> "Chủ tọa";
+            case SECRETARY -> "Thư ký";
+            case COMMISSIONER -> "Ủy viên";
+            case CRITIC -> "Phản biện";
+            case GUEST -> "Khách mời";
+        };
+    }
+
 }
 
 

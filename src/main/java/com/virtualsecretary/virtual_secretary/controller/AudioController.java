@@ -44,7 +44,7 @@ public class AudioController {
         }
     }
 
-    @GetMapping("/transcribe/{meetingCode}")
+    @PostMapping("/transcribe/{meetingCode}")
     public ApiResponse<String> transcribeAudio(@PathVariable String meetingCode) {
 
 
