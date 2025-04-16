@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.time.LocalDate;
 
@@ -21,10 +23,15 @@ import java.time.LocalDate;
 @Configuration
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class ApplicationInitConfig {
+public class ApplicationInitConfig implements WebMvcConfigurer {
     PasswordEncoder passwordEncoder;
 
 
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/stt/**")
+                .addResourceLocations("file:stt/");
+    }
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository) {

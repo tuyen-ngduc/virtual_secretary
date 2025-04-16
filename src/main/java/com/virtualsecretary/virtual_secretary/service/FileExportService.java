@@ -47,34 +47,51 @@ public class FileExportService {
         }
     }
 
-    public void createDocx(String meetingCode) {
+    public String createDocx(String meetingCode) {
+        // Kiểm tra cuộc họp có tồn tại không
         Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
+        // Kiểm tra trạng thái cuộc họp
         if (meeting.getMeetingStatus() != MeetingStatus.ENDED) {
             throw new IndicateException(ErrorCode.MEETING_NOT_ENDED_YET);
         }
 
+        // Đọc nội dung transcript
         String transcriptContent = readTranscript(meetingCode);
 
         try (XWPFDocument docx = new XWPFDocument()) {
             XWPFParagraph paragraph = docx.createParagraph();
             XWPFRun run = paragraph.createRun();
 
+            // Tách transcript thành các dòng và ghi vào file DOCX
             String[] lines = transcriptContent.split("\\r?\\n");
             for (String line : lines) {
                 run.setText(line);
-                run.addBreak();
+                run.addBreak();  // Thêm một dòng mới trong file DOCX
             }
 
-            Path docxPath = Paths.get("stt", meetingCode, "transcript.docx");
+            // Tạo thư mục chứa file DOCX nếu chưa có
+            Path docxDirectory = Paths.get("stt", meetingCode);  // Đảm bảo đường dẫn thích hợp
+            Files.createDirectories(docxDirectory);  // Tạo thư mục nếu chưa có
+
+            // Tạo đường dẫn cho file DOCX
+            Path docxPath = docxDirectory.resolve("transcript.docx");
+
+            // Ghi nội dung vào file DOCX
             try (FileOutputStream out = new FileOutputStream(docxPath.toFile())) {
                 docx.write(out);
             }
-        } catch (Exception e) {
+
+            // Trả về đường dẫn tuyệt đối đến file DOCX
+            return docxPath.toString();  // Trả về đường dẫn file DOCX
+        } catch (IOException e) {
+            // Xử lý lỗi trong trường hợp không tạo được file
             log.error("Error creating DOCX for meeting: {}", meetingCode, e);
+            throw new IndicateException(ErrorCode.FILE_EXPORT_ERROR);  // Ném lỗi hoặc trả về thông báo lỗi
         }
     }
+
 
 
 

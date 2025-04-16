@@ -118,10 +118,6 @@ public class MeetingService {
                 .collect(Collectors.toList());
     }
 
-
-
-
-
     public void deleteMeeting(long meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));

@@ -29,6 +29,7 @@ import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -66,7 +67,6 @@ public class AudioService {
                 .map(f -> f.substring(f.lastIndexOf(".")))
                 .orElse(".wav");
 
-        // Format tên file: timestamp_tennguoi_vaitro.wav
         String formattedName = member.getUser().getName().replaceAll("\\s+", "_");
         String role = getVietnameseRoleName(member.getMeetingRole());
         String fileName = String.format("%s_%s_%s%s", timestamp, formattedName, role, extension);
@@ -101,6 +101,7 @@ public class AudioService {
             if (audioFiles == null || audioFiles.length == 0) {
                 return "No audio files found!";
             }
+            Arrays.sort(audioFiles, Comparator.comparing(File::getName));
 
             Files.createDirectories(Paths.get(transcriptDirectory));
             StringBuilder transcriptBuilder = new StringBuilder();
