@@ -38,7 +38,7 @@ public class FileExportController {
                     .build();
 
         } catch (Exception e) {
-            // Xử lý lỗi nếu có
+            log.error("Error occurred while exporting docx for meetingCode: {}. Error: {}", meetingCode, e.getMessage(), e);
             throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }

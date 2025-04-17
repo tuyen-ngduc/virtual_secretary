@@ -33,8 +33,11 @@ public enum ErrorCode {
     MEETING_TIME_CONFLICT(1022,"MEETING_TIME_CONFLICT", HttpStatus.CONFLICT ),
     EMPLOYEE_CODE_EXISTED(1023, "Employee code existed", HttpStatus.BAD_REQUEST),
     MEETING_NOT_ENDED_YET(1024, "Meeting not ended", HttpStatus.BAD_REQUEST),
-    FILE_EXPORT_ERROR(1025, "File export error", HttpStatus.BAD_REQUEST)
-    ;
+    FILE_EXPORT_ERROR(1025, "File export error", HttpStatus.BAD_REQUEST),
+    FILE_NOT_EXISTED(1026, "File not existed", HttpStatus.BAD_REQUEST)
+
+
+            ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +17,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.LocalDate;
 
 
@@ -29,8 +32,18 @@ public class ApplicationInitConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Chia sẻ thư mục stt/ với URL http://your-server.com/stt/
         registry.addResourceHandler("/stt/**")
-                .addResourceLocations("file:stt/");
+                .addResourceLocations("file:/home/thuanld/virtual_secretary/stt");
+    }
+
+    @Bean
+    public CommandLineRunner checkConnection(DataSource dataSource) {
+        return args -> {
+            try (Connection conn = dataSource.getConnection()) {
+                System.out.println(">>> Connected to database: " + conn.getCatalog());
+            }
+        };
     }
 
     @Bean

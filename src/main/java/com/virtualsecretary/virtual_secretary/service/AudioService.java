@@ -45,100 +45,50 @@ public class AudioService {
 
 
     public String saveAudio(String meetingCode, MultipartFile file) {
-        var context = SecurityContextHolder.getContext();
-        String name = context.getAuthentication().getName();
-
-        Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
-
-        Member member = memberRepository.findByUser_EmployeeCodeAndMeeting_MeetingCode(name, meetingCode)
-                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
-
-        Path audioDirectory = Paths.get("audio", meetingCode);
-        try {
-            Files.createDirectories(audioDirectory);
-        } catch (IOException e) {
-            throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
-
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm-ss"));
-        String extension = Optional.ofNullable(file.getOriginalFilename())
-                .filter(f -> f.contains("."))
-                .map(f -> f.substring(f.lastIndexOf(".")))
-                .orElse(".wav");
-
-        String formattedName = member.getUser().getName().replaceAll("\\s+", "_");
-        String role = getVietnameseRoleName(member.getMeetingRole());
-        String fileName = String.format("%s_%s_%s%s", timestamp, formattedName, role, extension);
-
-        Path filePath = audioDirectory.resolve(fileName);
-
-        try {
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi lưu file audio", e);
-        }
-
-        return filePath.toString();
-    }
-
-    public String transcribeAudioFiles(String meetingCode) {
         meetingRepository.findByMeetingCode(meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
-        String audioDirectory = "audio/" + meetingCode;
-        String transcriptDirectory = "stt/" + meetingCode;
-        File audioDir = new File(audioDirectory);
-        File transcriptFile = new File(transcriptDirectory + "/transcript.txt");
-
-        if (!audioDir.exists() || !audioDir.isDirectory()) {
-            return "Audio directory does not exist!";
-        }
-
         try {
-            File[] audioFiles = audioDir.listFiles((dir, name) ->
-                    name.endsWith(".mp3") || name.endsWith(".wav") || name.endsWith(".ogg"));
-            if (audioFiles == null || audioFiles.length == 0) {
-                return "No audio files found!";
-            }
-            Arrays.sort(audioFiles, Comparator.comparing(File::getName));
+            String audioDirectory = "audio/" + meetingCode;
+            Files.createDirectories(Paths.get(audioDirectory));
 
-            Files.createDirectories(Paths.get(transcriptDirectory));
-            StringBuilder transcriptBuilder = new StringBuilder();
+            String originalFilename = file.getOriginalFilename();
+            String savedFilePath = audioDirectory + "/" + originalFilename;
+            Path path = Paths.get(savedFilePath);
+            Files.write(path, file.getBytes());
 
-            for (File audioFile : audioFiles) {
-                String audioFilePath = audioFile.getAbsolutePath();
-                String rawTranscriptJson = transcribeWithWhisper(audioFilePath);
+            // Gọi chuyển âm ngay sau khi lưu file
+            String rawJson = transcribeWithWhisper(savedFilePath);
+            String transcriptText = extractTranscriptFromJson(rawJson);
 
-                String transcriptText = extractTranscriptFromJson(rawTranscriptJson);
-
-                String filename = audioFile.getName();
-                String[] parts = filename.split("_");
-
-                if (parts.length < 4) {
-                    continue; // Bỏ qua file có tên không đúng định dạng
-                }
-
+            // Trích xuất tên và vai trò từ tên file
+            String[] parts = originalFilename.split("_");
+            if (parts.length >= 4) {
                 String name = Arrays.stream(parts, 2, parts.length - 1)
                         .collect(Collectors.joining(" "))
                         .replaceAll("\\.\\w+$", "");
                 String roleWithExt = parts[parts.length - 1];
                 String role = roleWithExt.replaceAll("\\.\\w+$", "");
 
-                transcriptBuilder.append(name).append(" - ").append(role)
-                        .append(": ").append(transcriptText.trim())
-                        .append("\n\n");
+                String transcriptDirectory = "stt/" + meetingCode;
+                Files.createDirectories(Paths.get(transcriptDirectory));
+
+                String transcriptLine = name + " - " + role + ": " + transcriptText.trim() + "\n\n";
+
+                // Append vào file transcript.txt
+                File transcriptFile = new File(transcriptDirectory + "/transcript.txt");
+                Files.write(Paths.get(transcriptFile.getAbsolutePath()),
+                        transcriptLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             }
 
-            Files.write(Paths.get(transcriptFile.getAbsolutePath()), transcriptBuilder.toString().getBytes());
-
-            return transcriptFile.getAbsolutePath();
+            return savedFilePath;
 
         } catch (IOException e) {
             e.printStackTrace();
-            return "Error while transcribing audio files: " + e.getMessage();
+            throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
+
 
     private String extractTranscriptFromJson(String json) {
         try {

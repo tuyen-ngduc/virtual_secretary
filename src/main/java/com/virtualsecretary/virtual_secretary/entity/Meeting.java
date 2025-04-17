@@ -32,7 +32,6 @@ public class Meeting {
     String name;
     @Column(nullable = false)
     LocalDateTime startTime;
-
     @Column(nullable = false)
     LocalDateTime endTime;
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.REMOVE)

@@ -9,7 +9,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-model = whisper.load_model("medium")
+model = whisper.load_model("base")
 
 def convert_to_wav(input_path, output_path):
     # Dùng FFmpeg để chuyển định dạng .ogg → .wav (mono, 16kHz)
@@ -48,7 +48,7 @@ def transcribe_audio():
         convert_to_wav(input_path, wav_path)
 
         # Chạy Whisper trên file WAV
-        result = model.transcribe(wav_path)
+        result = model.transcribe(wav_path, language='vi')
         transcript_text = result.get("text", "")
 
     except Exception as e:

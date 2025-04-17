@@ -25,13 +25,15 @@ public class AudioController {
             @RequestParam("file") MultipartFile file) {
 
         try {
+            // Save audio và tự động transcribe bên trong service
+            String resultMessage = audioService.saveAudio(meetingCode, file);
 
-            String filePath = audioService.saveAudio(meetingCode, file);
             return ApiResponse.<String>builder()
                     .code(200)
-                    .message("File saved successfully")
-                    .result(filePath)
+                    .message("Upload và chuyển giọng nói thành công!")
+                    .result(resultMessage)
                     .build();
+
         } catch (IndicateException e) {
             return ApiResponse.<String>builder()
                     .code(400)
@@ -45,14 +47,4 @@ public class AudioController {
         }
     }
 
-    @PostMapping("/transcribe/{meetingCode}")
-    public ApiResponse<String> transcribeAudio(@PathVariable String meetingCode) {
-
-
-        return ApiResponse.<String>builder()
-                .code(200)
-                .message("Tạo biên bản thành công!")
-                .result(audioService.transcribeAudioFiles(meetingCode))
-                .build() ;
-    }
 }
