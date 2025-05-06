@@ -3,27 +3,39 @@ package com.virtualsecretary.virtual_secretary.service;
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
-import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.signatures.*;
 import com.virtualsecretary.virtual_secretary.entity.Meeting;
 import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
-import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.repository.MeetingRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+
+import com.itextpdf.kernel.geom.Rectangle;
+
 import java.io.*;
 import java.nio.file.*;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,92 +59,168 @@ public class FileExportService {
         }
     }
 
-    public String createDocx(String meetingCode) {
-        // Kiểm tra cuộc họp có tồn tại không
+    public Map<String, String> createDocx(String meetingCode) {
         Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
-        // Kiểm tra trạng thái cuộc họp
-        if (meeting.getMeetingStatus() != MeetingStatus.ENDED) {
-            throw new IndicateException(ErrorCode.MEETING_NOT_ENDED_YET);
-        }
-
-        // Đọc nội dung transcript
         String transcriptContent = readTranscript(meetingCode);
 
         try (XWPFDocument docx = new XWPFDocument()) {
+            // Tiêu đề: BIÊN BẢN CUỘC HỌP + meetingCode
+            XWPFParagraph title = docx.createParagraph();
+            title.setAlignment(ParagraphAlignment.CENTER);
+            XWPFRun titleRun = title.createRun();
+            titleRun.setBold(true);
+            titleRun.setFontSize(16);
+            titleRun.setText("BIÊN BẢN CUỘC HỌP " + meetingCode);
+            titleRun.addBreak();
+
+            // Nội dung bản ghi
             XWPFParagraph paragraph = docx.createParagraph();
             XWPFRun run = paragraph.createRun();
-
-            // Tách transcript thành các dòng và ghi vào file DOCX
             String[] lines = transcriptContent.split("\\r?\\n");
             for (String line : lines) {
                 run.setText(line);
-                run.addBreak();  // Thêm một dòng mới trong file DOCX
+                run.addBreak();
             }
 
-            // Tạo thư mục chứa file DOCX nếu chưa có
-            Path docxDirectory = Paths.get("stt", meetingCode);  // Đảm bảo đường dẫn thích hợp
-            Files.createDirectories(docxDirectory);  // Tạo thư mục nếu chưa có
+            // Ghi ra file hệ thống tại thư mục stt/{meetingCode}/
+            Path outputDir = Paths.get("stt", meetingCode);
+            Files.createDirectories(outputDir);  // Tạo thư mục nếu chưa có
 
-            // Tạo đường dẫn cho file DOCX
-            Path docxPath = docxDirectory.resolve("transcript.docx");
+            String fileName = "Bien_ban_cuoc_hop_" + meetingCode + ".docx";
+            Path outputFilePath = outputDir.resolve(fileName);
 
-            // Ghi nội dung vào file DOCX
-            try (FileOutputStream out = new FileOutputStream(docxPath.toFile())) {
-                docx.write(out);
+            try (OutputStream fileOut = Files.newOutputStream(outputFilePath)) {
+                docx.write(fileOut); // Ghi ra file thật trên ổ đĩa
             }
 
-            // Trả về đường dẫn tuyệt đối đến file DOCX
-            return docxPath.toString();  // Trả về đường dẫn file DOCX
+            // Ghi vào ByteArrayOutputStream để trả về base64
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            docx.write(out);
+            byte[] docBytes = out.toByteArray();
+            String base64Content = Base64.getEncoder().encodeToString(docBytes);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("fileName", fileName);
+            response.put("fileContent", base64Content);
+            return response;
         } catch (IOException e) {
-            // Xử lý lỗi trong trường hợp không tạo được file
             log.error("Error creating DOCX for meeting: {}", meetingCode, e);
-            throw new IndicateException(ErrorCode.FILE_EXPORT_ERROR);  // Ném lỗi hoặc trả về thông báo lỗi
+            throw new IndicateException(ErrorCode.FILE_EXPORT_ERROR);
+        }
+    }
+
+
+
+    public Map<String, String> createPdf(String meetingCode) {
+        Meeting meeting = meetingRepository.findByMeetingCode(meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
+
+        String transcriptContent = readTranscript(meetingCode);
+
+        Path directoryPath = Paths.get("stt", meetingCode);
+        Path filePath = directoryPath.resolve("Bien_ban_cuoc_hop_" + meetingCode + ".pdf");
+
+        try {
+            Files.createDirectories(directoryPath);
+
+            // 1. Tạo file PDF tạm thời chưa ký
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PdfWriter writer = new PdfWriter(baos);
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf);
+
+            String fontPath = "fonts/FreeSerif.ttf";
+            PdfFont font = PdfFontFactory.createFont(fontPath);
+            PdfFont boldFont = PdfFontFactory.createFont(fontPath);
+            PdfFont signatureFont = PdfFontFactory.createFont(fontPath);
+
+            Paragraph title = new Paragraph("BIÊN BẢN CUỘC HỌP " + meetingCode)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFont(boldFont)
+                    .setFontSize(16);
+            document.add(title);
+
+            String[] lines = transcriptContent.split("\\r?\\n");
+            for (String line : lines) {
+                document.add(new Paragraph(line).setFont(font));
+            }
+            document.close();
+
+            // 2. Ghi file PDF tạm ra đĩa
+            Path unsignedPdfPath = directoryPath.resolve("unsigned_" + meetingCode + ".pdf");
+            Files.write(unsignedPdfPath, baos.toByteArray());
+
+            // 3. Tải keystore
+            String keystorePath = "/home/thuanld/virtual_secretary/keystores/keystore.jks";
+            String keystorePassword = "thuanld@actvn";
+            String keyPassword = "thuanld@actvn";
+            String alias = "myalias";
+
+            KeyStore ks = KeyStore.getInstance("JKS");
+            try (FileInputStream fis = new FileInputStream(keystorePath)) {
+                ks.load(fis, keystorePassword.toCharArray());
+            }
+
+            PrivateKey privateKey = (PrivateKey) ks.getKey(alias, keyPassword.toCharArray());
+            Certificate[] chain = ks.getCertificateChain(alias);
+
+            // 4. Ký PDF
+            try (FileOutputStream signedOut = new FileOutputStream(filePath.toFile())) {
+                PdfReader reader = new PdfReader(unsignedPdfPath.toFile());
+                PdfSigner signer = new PdfSigner(reader, signedOut, new StampingProperties());
+
+                // Lấy kích thước trang để tính vị trí chữ ký
+                PdfDocument pdfDoc = signer.getDocument();
+                PdfPage page = pdfDoc.getPage(1);  // Hoặc trang cuối: pdfDoc.getPage(pdfDoc.getNumberOfPages())
+                Rectangle pageSize = page.getPageSize();
+
+                // Đặt chữ ký ở góc dưới bên phải, cách mép phải 36pt, mép dưới 50pt
+                float sigWidth = 250;
+                float sigHeight = 120;
+                float x = pageSize.getWidth() - sigWidth - 36;
+                float y = 50;
+
+                Rectangle signatureRect = new Rectangle(x, y, sigWidth, sigHeight);
+
+                PdfSignatureAppearance appearance = signer.getSignatureAppearance()
+                        .setReason("Ký xác nhận biên bản họp")
+                        .setLocation("Virtual Secretary System")
+                        .setPageRect(signatureRect)
+                        .setPageNumber(1)
+                        .setLayer2Font(signatureFont)
+                        .setReuseAppearance(false);
+                signer.setFieldName("sig");
+
+                IExternalSignature pks = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, "SunRsaSign");
+                IExternalDigest digest = new BouncyCastleDigest();
+
+                signer.signDetached(digest, pks, chain, null, null, null, 0, PdfSigner.CryptoStandard.CADES);
+                Files.deleteIfExists(unsignedPdfPath);
+
+            }
+
+
+            // 5. Encode base64
+            byte[] signedPdfBytes = Files.readAllBytes(filePath);
+            String base64Content = Base64.getEncoder().encodeToString(signedPdfBytes);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("fileName", filePath.getFileName().toString());
+            response.put("fileContent", base64Content);
+            return response;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new IndicateException(ErrorCode.FILE_EXPORT_ERROR);
         }
     }
 
 
 
 
-    public void convertDocxToPdf(String meetingCode) {
-        // Define paths for the DOCX and PDF files
-        Path docxPath = Paths.get("stt", meetingCode, "transcript.docx");
-        Path pdfPath = Paths.get("stt", meetingCode, "transcript.pdf");
 
-        if (!Files.exists(docxPath)) {
-            log.error("File DOCX không tồn tại tại {}", docxPath);
-            throw new RuntimeException("File DOCX không tồn tại.");
-        }
 
-        try (XWPFDocument docx = new XWPFDocument(new FileInputStream(docxPath.toFile()));
-             FileOutputStream fos = new FileOutputStream(pdfPath.toFile());
-             PdfWriter writer = new PdfWriter(fos);
-             PdfDocument pdfDoc = new PdfDocument(writer);
-             Document document = new Document(pdfDoc)) {
 
-            PdfFont font;
-            try (InputStream fontStream = getClass().getClassLoader().getResourceAsStream("fonts/FreeSerif.ttf")) {
-                if (fontStream == null) {
-                    log.error("Không tìm thấy tệp font FreeSerif.ttf trong resources/fonts.");
-                    throw new RuntimeException("Font không tồn tại. Không thể xuất PDF.");
-                }
-
-                byte[] fontBytes = fontStream.readAllBytes();
-                font = PdfFontFactory.createFont(fontBytes, PdfEncodings.IDENTITY_H);
-            }
-
-            for (XWPFParagraph paragraph : docx.getParagraphs()) {
-                String text = paragraph.getText();
-                if (text != null && !text.isEmpty()) {
-                    document.add(new Paragraph(text).setFont(font));
-                }
-            }
-
-            log.info("Đã chuyển đổi thành công file DOCX sang PDF: {}", pdfPath.toAbsolutePath());
-        } catch (IOException e) {
-            log.error("Lỗi khi chuyển đổi file DOCX sang PDF cho cuộc họp: {}", meetingCode, e);
-            throw new RuntimeException("Lỗi khi chuyển đổi file DOCX sang PDF.", e);
-        }
-    }
 }

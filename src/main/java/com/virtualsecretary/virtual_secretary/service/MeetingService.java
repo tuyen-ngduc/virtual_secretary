@@ -1,5 +1,6 @@
 package com.virtualsecretary.virtual_secretary.service;
 
+import com.virtualsecretary.virtual_secretary.dto.request.CancelMeetingRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
 import com.virtualsecretary.virtual_secretary.dto.request.UpdateMeetingRequest;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
@@ -8,25 +9,18 @@ import com.virtualsecretary.virtual_secretary.enums.ErrorCode;
 import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.mapper.MeetingMapper;
-import com.virtualsecretary.virtual_secretary.mapper.MemberMapper;
 import com.virtualsecretary.virtual_secretary.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -43,7 +37,6 @@ public class MeetingService {
     MemberRepository memberRepository;
     DepartmentRepository departmentRepository;
     MeetingMapper meetingMapper;
-    UserRepository userRepository;
 
     @PreAuthorize("hasRole('SECRETARY')")
     public MeetingCreationResponse createMeeting(MeetingCreationRequest request) {
@@ -66,6 +59,19 @@ public class MeetingService {
 
         return meetingMapper.toMeetingCreationResponse(meeting);
     }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
+    public List<MeetingCreationResponse> getMeetingsByDepartment(long departmentId) {
+        return meetingRepository.findByDepartmentId(departmentId).stream().map(meetingMapper::toMeetingCreationResponse).toList();
+    }
+
+    public List<MeetingCreationResponse> getMeetingsByStatus(MeetingStatus status) {
+        return meetingRepository.findAll().stream()
+                .filter(meeting -> meeting.getMeetingStatus() == status)
+                .map(meetingMapper::toMeetingCreationResponse)
+                .collect(Collectors.toList());
+    }
+
 
     public UpdateMeetingResponse updateMeeting(UpdateMeetingRequest request) {
         Meeting meeting = meetingRepository.findById(request.getId())
@@ -104,6 +110,7 @@ public class MeetingService {
             throw new RuntimeException("Error creating meeting directories", e);
         }
     }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     public List<MeetingCreationResponse> getAllMeetings() {
         return meetingRepository.findAll().stream().map(meetingMapper::toMeetingCreationResponse).toList();
@@ -198,6 +205,39 @@ public class MeetingService {
         }
 
         return new MonthlyMeetingResponse(result);
+    }
+
+    public Map<MeetingStatus, Long> getMeetingStatistics() {
+        List<Meeting> meetings = meetingRepository.findAll();
+
+        Map<MeetingStatus, Long> stats = meetings.stream()
+                .collect(Collectors.groupingBy(
+                        Meeting::getMeetingStatus,
+                        Collectors.counting()
+                ));
+
+        for (MeetingStatus status : MeetingStatus.values()) {
+            stats.putIfAbsent(status, 0L);
+        }
+
+        return stats;
+    }
+    public String cancelMeeting(CancelMeetingRequest request) {
+        Meeting meeting = meetingRepository.findById(request.getMeetingId())
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
+
+        meeting.setCancelled(true);
+        meetingRepository.save(meeting);
+        return "Cuộc họp " + meeting.getName() + " bị hủy với lý do: " + request.getReason();
+    }
+
+    public void postponeMeeting(Long meetingId, LocalDateTime newStart, LocalDateTime newEnd) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new RuntimeException("Meeting not found"));
+
+        meeting.setStartTime(newStart);
+        meeting.setEndTime(newEnd);
+        meetingRepository.save(meeting);
     }
 
 

@@ -33,6 +33,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Query("SELECT m FROM Meeting m JOIN Member mem ON m.id = mem.meeting.id WHERE mem.user.id = :userId")
     List<Meeting> findMeetingsByUserId(@Param("userId") Long userId);
 
-
+    List<Meeting> findByDepartmentId(Long departmentId);
 
 }

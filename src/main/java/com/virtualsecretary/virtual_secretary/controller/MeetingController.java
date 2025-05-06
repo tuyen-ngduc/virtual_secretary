@@ -1,10 +1,9 @@
 package com.virtualsecretary.virtual_secretary.controller;
 
-import com.virtualsecretary.virtual_secretary.dto.request.JoinRequest;
-import com.virtualsecretary.virtual_secretary.dto.request.MeetingCreationRequest;
-import com.virtualsecretary.virtual_secretary.dto.request.UpdateMeetingRequest;
+import com.virtualsecretary.virtual_secretary.dto.request.*;
 import com.virtualsecretary.virtual_secretary.dto.response.*;
 import com.virtualsecretary.virtual_secretary.entity.Member;
+import com.virtualsecretary.virtual_secretary.enums.MeetingStatus;
 import com.virtualsecretary.virtual_secretary.exception.IndicateException;
 import com.virtualsecretary.virtual_secretary.payload.Notification;
 import com.virtualsecretary.virtual_secretary.payload.Signal;
@@ -43,7 +42,6 @@ public class MeetingController {
     MeetingParticipantManager participantManager;
     MemberRepository memberRepository;
 
-
     @GetMapping
     public ApiResponse<List<MeetingCreationResponse>> getAllMeetings() {
         return ApiResponse.<List<MeetingCreationResponse>>builder()
@@ -56,6 +54,47 @@ public class MeetingController {
         return ApiResponse.<List<MeetingCreationResponse>>builder()
                 .code(200)
                 .result(meetingService.getMyMeetings(userId))
+                .build();
+    }
+    @GetMapping("/by-department/{id}")
+    public ApiResponse<List<MeetingCreationResponse>> getMeetingsByDepartment(@PathVariable Long id) {
+        return ApiResponse.<List<MeetingCreationResponse>>builder()
+                .code(200)
+                .result(meetingService.getMeetingsByDepartment(id))
+                .build();
+    }
+    @GetMapping("/by-status")
+    public ApiResponse<List<MeetingCreationResponse>> getMeetingsByStatus(@RequestParam MeetingStatus status) {
+        return ApiResponse.<List<MeetingCreationResponse>>builder()
+                .code(200)
+                .result(meetingService.getMeetingsByStatus(status))
+                .build();
+    }
+
+    @GetMapping("/stats")
+    public ApiResponse<Map<MeetingStatus, Long>> getMeetingStats() {
+        return ApiResponse.<Map<MeetingStatus, Long>>builder()
+                .code(200)
+                .result(meetingService.getMeetingStatistics())
+                .build();
+    }
+    @PostMapping("/cancel")
+    public ApiResponse<String> cancelMeeting(@RequestBody CancelMeetingRequest request) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(meetingService.cancelMeeting(request))
+                .build();
+    }
+
+    @PostMapping("/postpone/{id}")
+    public ApiResponse<String> postponeMeeting(
+            @PathVariable Long id,
+            @RequestBody @Valid PostponeMeetingRequest request
+    ) {
+        meetingService.postponeMeeting(id, request.getNewStartTime(), request.getNewEndTime());
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result("Meeting postponed successfully.")
                 .build();
     }
 

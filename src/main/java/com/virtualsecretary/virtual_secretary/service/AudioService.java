@@ -45,41 +45,55 @@ public class AudioService {
 
 
     public String saveAudio(String meetingCode, MultipartFile file) {
+        // Lấy người dùng hiện tại
+        var context = SecurityContextHolder.getContext();
+        String username = context.getAuthentication().getName();
+
+        // Kiểm tra sự tồn tại của cuộc họp
         meetingRepository.findByMeetingCode(meetingCode)
                 .orElseThrow(() -> new IndicateException(ErrorCode.MEETING_NOT_EXISTED));
 
+        // Tìm member trong cuộc họp
+        Member member = memberRepository.findByUser_EmployeeCodeAndMeeting_MeetingCode(username, meetingCode)
+                .orElseThrow(() -> new IndicateException(ErrorCode.MEMBER_NOT_EXISTED));
+
         try {
+            // Tạo thư mục audio nếu chưa tồn tại
             String audioDirectory = "audio/" + meetingCode;
             Files.createDirectories(Paths.get(audioDirectory));
 
+            // Dùng tên gốc của file upload
             String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isBlank()) {
+                throw new IndicateException(ErrorCode.FILE_NOT_EXISTED);
+            }
+
             String savedFilePath = audioDirectory + "/" + originalFilename;
             Path path = Paths.get(savedFilePath);
             Files.write(path, file.getBytes());
 
-            // Gọi chuyển âm ngay sau khi lưu file
+            // Chuyển âm sang text
             String rawJson = transcribeWithWhisper(savedFilePath);
             String transcriptText = extractTranscriptFromJson(rawJson);
 
-            // Trích xuất tên và vai trò từ tên file
-            String[] parts = originalFilename.split("_");
-            if (parts.length >= 4) {
-                String name = Arrays.stream(parts, 2, parts.length - 1)
-                        .collect(Collectors.joining(" "))
-                        .replaceAll("\\.\\w+$", "");
-                String roleWithExt = parts[parts.length - 1];
-                String role = roleWithExt.replaceAll("\\.\\w+$", "");
+            // Lấy tên và vai trò từ member
+            String displayName = member.getUser().getName();
+            String role = getVietnameseRoleName(member.getMeetingRole());
 
-                String transcriptDirectory = "stt/" + meetingCode;
-                Files.createDirectories(Paths.get(transcriptDirectory));
+            // Tạo thư mục lưu transcript nếu chưa tồn tại
+            String transcriptDirectory = "stt/" + meetingCode;
+            Files.createDirectories(Paths.get(transcriptDirectory));
 
-                String transcriptLine = name + " - " + role + ": " + transcriptText.trim() + "\n\n";
+            // Lấy thời gian hiện tại (thời điểm người đó nói)
+            String timeNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss dd-MM-yyyy"));
 
-                // Append vào file transcript.txt
-                File transcriptFile = new File(transcriptDirectory + "/transcript.txt");
-                Files.write(Paths.get(transcriptFile.getAbsolutePath()),
-                        transcriptLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            }
+            // Tạo dòng transcript: [time] Name - Role: Nội dung
+            String transcriptLine = "[" + timeNow + "] " + displayName + " - " + role + ": " + transcriptText.trim() + "\n\n";
+
+            // Ghi vào transcript.txt
+            File transcriptFile = new File(transcriptDirectory + "/transcript.txt");
+            Files.write(Paths.get(transcriptFile.getAbsolutePath()),
+                    transcriptLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
             return savedFilePath;
 
@@ -88,6 +102,7 @@ public class AudioService {
             throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
+
 
 
     private String extractTranscriptFromJson(String json) {
