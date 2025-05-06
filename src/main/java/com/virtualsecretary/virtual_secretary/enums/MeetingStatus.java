@@ -7,6 +7,6 @@ public enum MeetingStatus {
     ENDED,
     CANCELLED,
     POSTPONED,
-
+    UNKNOWN,
 
 }

@@ -237,6 +237,7 @@ public class MeetingService {
 
         meeting.setStartTime(newStart);
         meeting.setEndTime(newEnd);
+        meeting.setPostponed(true);
         meetingRepository.save(meeting);
     }
 

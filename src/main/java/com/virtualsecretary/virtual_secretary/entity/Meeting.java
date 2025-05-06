@@ -36,14 +36,17 @@ public class Meeting {
     LocalDateTime endTime;
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.REMOVE)
     List<Member> members;
-    @Column(nullable = false)
+
     boolean isCancelled = false;
+    boolean isPostponed = false;
 
 
 
     public MeetingStatus getMeetingStatus() {
 
         if (isCancelled) return MeetingStatus.CANCELLED;
+        if (isPostponed) return MeetingStatus.POSTPONED;
+
         LocalDateTime now = LocalDateTime.now();
         if (startTime.isAfter(now)) {
             if (now.isBefore(startTime.minusHours(2))) {
