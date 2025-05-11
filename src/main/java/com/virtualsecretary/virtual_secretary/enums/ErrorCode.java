@@ -34,8 +34,9 @@ public enum ErrorCode {
     EMPLOYEE_CODE_EXISTED(1023, "Employee code existed", HttpStatus.BAD_REQUEST),
     MEETING_NOT_ENDED_YET(1024, "Meeting not ended", HttpStatus.BAD_REQUEST),
     FILE_EXPORT_ERROR(1025, "File export error", HttpStatus.BAD_REQUEST),
-    FILE_NOT_EXISTED(1026, "File not existed", HttpStatus.BAD_REQUEST)
-
+    FILE_NOT_EXISTED(1026, "File not existed", HttpStatus.BAD_REQUEST),
+    SENDER_NOT_EXISTED(1027, "Sender not existed", HttpStatus.BAD_REQUEST),
+    MESSAGE_NOT_EXISTED(1028, "Message not existed", HttpStatus.BAD_REQUEST)
 
             ;
 

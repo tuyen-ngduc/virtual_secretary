@@ -45,7 +45,7 @@ public class Meeting {
     public MeetingStatus getMeetingStatus() {
 
         if (isCancelled) return MeetingStatus.CANCELLED;
-        if (isPostponed) return MeetingStatus.POSTPONED;
+        if (isPostponed) return MeetingStatus.NOT_STARTED;
 
         LocalDateTime now = LocalDateTime.now();
         if (startTime.isAfter(now)) {

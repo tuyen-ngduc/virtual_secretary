@@ -8,15 +8,20 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -61,6 +66,29 @@ public class FileExportController {
         } catch (Exception e) {
             log.error("Error occurred while exporting PDF for meetingCode: {}", meetingCode, e);
             throw new IndicateException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
+    }
+
+    private final RestTemplate restTemplate;
+
+    @PostMapping("/merge/{meetingCode}")
+    public ResponseEntity<?> mergeAudio(@PathVariable String meetingCode) {
+        String flaskURL = "http://localhost:5010/merge-audio";
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("meeting_code", meetingCode);
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(flaskURL, request, Map.class);
+            return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
